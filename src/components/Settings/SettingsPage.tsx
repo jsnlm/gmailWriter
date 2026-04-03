@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from "react";
+import {
+  Box, AppBar, Toolbar, Typography, Button,
+  Tabs, Tab, Container, CircularProgress,
+  Snackbar, Alert,
+} from "@mui/material";
+import { ThemeProvider } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { SampleEmailsSection } from "./SampleEmails";
 import { PersonalInfoSection } from "./PersonalInfo";
 import { LLMConfigSection } from "./LLMConfig";
 import { PromptInstructionsSection } from "./PromptInstructions";
 import { getSyncSettings, saveSyncSettings, getLocalSettings, saveLocalSettings } from "../../services/storage";
+import { gmailTheme } from "../../theme";
 import type { SyncSettings, LocalSettings } from "../../types";
 
 type Tab = "llm" | "writing" | "personal" | "emails";
@@ -12,7 +21,10 @@ export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("llm");
   const [sync, setSync] = useState<SyncSettings | null>(null);
   const [local, setLocal] = useState<LocalSettings | null>(null);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [saving, setSaving] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: "success" | "error" }>({
+    open: false, message: "", severity: "success",
+  });
 
   useEffect(() => {
     Promise.all([getSyncSettings(), getLocalSettings()]).then(([s, l]) => {
@@ -23,68 +35,68 @@ export function SettingsPage() {
 
   const handleSave = async () => {
     if (!sync || !local) return;
-    setSaveStatus("saving");
-    await Promise.all([
-      saveSyncSettings({
-        personalInfo: sync.personalInfo,
-        llmConfig: sync.llmConfig,
-        promptInstructions: sync.promptInstructions,
-      }),
-      saveLocalSettings({ sampleEmails: local.sampleEmails }),
-    ]);
-    setSaveStatus("saved");
-    setTimeout(() => setSaveStatus("idle"), 2000);
+    setSaving(true);
+    try {
+      await Promise.all([
+        saveSyncSettings({ personalInfo: sync.personalInfo, llmConfig: sync.llmConfig, promptInstructions: sync.promptInstructions }),
+        saveLocalSettings({ sampleEmails: local.sampleEmails }),
+      ]);
+      setSnackbar({ open: true, message: "Settings saved", severity: "success" });
+    } catch {
+      setSnackbar({ open: true, message: "Failed to save settings", severity: "error" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!sync || !local) {
-    return <div className="loading-page">Loading settings...</div>;
+    return (
+      <ThemeProvider theme={gmailTheme}>
+        <Box className="flex items-center justify-center h-screen">
+          <CircularProgress />
+        </Box>
+      </ThemeProvider>
+    );
   }
 
   return (
-    <div className="settings-page">
-      <header className="settings-header">
-        <div className="settings-title">
-          <span className="settings-icon">✦</span>
-          Gmail AI Drafter — Settings
-        </div>
-        <button
-          className={`save-btn ${saveStatus === "saved" ? "saved" : ""}`}
-          onClick={handleSave}
-          disabled={saveStatus === "saving"}
+    <ThemeProvider theme={gmailTheme}>
+      <CssBaseline />
+      <Box className="min-h-screen bg-gray-50">
+        <AppBar
+          position="sticky"
+          elevation={0}
+          sx={{ bgcolor: "background.paper", borderBottom: 1, borderColor: "divider" }}
         >
-          {saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? "✓ Saved" : "Save Settings"}
-        </button>
-      </header>
+          <Toolbar>
+            <AutoAwesomeIcon sx={{ color: "primary.main", mr: 1.5 }} />
+            <Typography variant="h6" sx={{ color: "text.primary", flexGrow: 1, fontWeight: 600 }}>
+              Gmail AI Drafter — Settings
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={handleSave}
+              disabled={saving}
+              startIcon={saving ? <CircularProgress size={16} color="inherit" /> : undefined}
+            >
+              {saving ? "Saving…" : "Save Settings"}
+            </Button>
+          </Toolbar>
+          <Tabs
+            value={activeTab}
+            onChange={(_, v) => setActiveTab(v as Tab)}
+            sx={{ px: 2 }}
+            textColor="primary"
+            indicatorColor="primary"
+          >
+            <Tab label="LLM Config" value="llm" />
+            <Tab label="Writing Instructions" value="writing" />
+            <Tab label="Personal Info" value="personal" />
+            <Tab label="Sample Emails" value="emails" />
+          </Tabs>
+        </AppBar>
 
-      <div className="settings-layout">
-        <nav className="settings-nav">
-          <button
-            className={`nav-item ${activeTab === "llm" ? "active" : ""}`}
-            onClick={() => setActiveTab("llm")}
-          >
-            🔑 LLM Config
-          </button>
-          <button
-            className={`nav-item ${activeTab === "writing" ? "active" : ""}`}
-            onClick={() => setActiveTab("writing")}
-          >
-            ✏️ Writing Instructions
-          </button>
-          <button
-            className={`nav-item ${activeTab === "personal" ? "active" : ""}`}
-            onClick={() => setActiveTab("personal")}
-          >
-            👤 Personal Info
-          </button>
-          <button
-            className={`nav-item ${activeTab === "emails" ? "active" : ""}`}
-            onClick={() => setActiveTab("emails")}
-          >
-            ✉ Sample Emails
-          </button>
-        </nav>
-
-        <main className="settings-main">
+        <Container maxWidth="md" className="py-8">
           {activeTab === "llm" && (
             <LLMConfigSection
               config={sync.llmConfig}
@@ -109,8 +121,19 @@ export function SettingsPage() {
               onChange={(sampleEmails) => setLocal({ ...local, sampleEmails })}
             />
           )}
-        </main>
-      </div>
-    </div>
+        </Container>
+      </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity={snackbar.severity} variant="filled" onClose={() => setSnackbar((s) => ({ ...s, open: false }))}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </ThemeProvider>
   );
 }

@@ -1,4 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
+import {
+  Box, Typography, IconButton, CircularProgress,
+  Alert, Button, Divider, Tooltip,
+} from "@mui/material";
+import SettingsIcon from "@mui/icons-material/Settings";
+import CloseIcon from "@mui/icons-material/Close";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import type { ThreadData, SyncSettings, LocalSettings } from "../../types";
 import { CategorySelector } from "./CategorySelector";
 import { ToneSelector } from "./ToneSelector";
@@ -23,7 +31,6 @@ export function Sidebar({ thread, settings, onClose }: Props) {
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load categories on mount
   useEffect(() => {
     chrome.runtime.sendMessage(
       { type: "GET_CATEGORIES", thread, settings },
@@ -39,7 +46,7 @@ export function Sidebar({ thread, settings, onClose }: Props) {
     );
   }, []);
 
-  const generateDraft = useCallback(async () => {
+  const generateDraft = useCallback(() => {
     const category = selectedCategory ?? "";
     const instructions = customInstructions;
 
@@ -70,58 +77,83 @@ export function Sidebar({ thread, settings, onClose }: Props) {
   const handleInsert = (text: string) => {
     const success = insertIntoCompose(text);
     if (!success) {
-      alert("Could not find Gmail's compose area. Please click Reply in the email thread first, then try inserting again.");
+      alert("Could not find Gmail's compose area. Please click Reply in the email thread first.");
     }
   };
 
-  return (
-    <div className="sidebar">
-      {/* Header */}
-      <div className="sidebar-header">
-        <div className="sidebar-title">
-          <span className="sidebar-icon">✦</span>
-          <span>AI Drafter</span>
-        </div>
-        <div className="header-actions">
-          <button
-            className="icon-btn"
-            title="Settings"
-            onClick={() => chrome.runtime.sendMessage({ type: "OPEN_OPTIONS" })}
-          >
-            ⚙
-          </button>
-          <button className="icon-btn" title="Close" onClick={onClose}>
-            ✕
-          </button>
-        </div>
-      </div>
+  const canSubmit = !!(selectedCategory || customInstructions.trim());
 
-      {/* Thread subject */}
-      <div className="thread-info">
-        <span className="thread-subject" title={thread.subject}>{thread.subject}</span>
-      </div>
+  return (
+    <Box sx={{
+      width: "100%",
+      height: "100%",
+      bgcolor: "background.paper",
+      borderLeft: 1,
+      borderColor: "divider",
+      boxShadow: "-4px 0 20px rgba(0,0,0,0.10)",
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+    }}>
+      {/* Header */}
+      <Box sx={{
+        display: "flex",
+        alignItems: "center",
+        px: 2,
+        py: 1.25,
+        borderBottom: 1,
+        borderColor: "divider",
+        bgcolor: "grey.50",
+        flexShrink: 0,
+      }}>
+        <AutoAwesomeIcon sx={{ color: "primary.main", fontSize: 20, mr: 1 }} />
+        <Typography variant="subtitle1" fontWeight={600} sx={{ flexGrow: 1, color: "text.primary" }}>
+          AI Drafter
+        </Typography>
+        <Tooltip title="Settings">
+          <IconButton size="small" onClick={() => chrome.runtime.sendMessage({ type: "OPEN_OPTIONS" })}>
+            <SettingsIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Close">
+          <IconButton size="small" onClick={onClose}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Box>
+
+      {/* Thread subject chip */}
+      <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          noWrap
+          title={thread.subject}
+          sx={{ display: "block", fontWeight: 500 }}
+        >
+          {thread.subject}
+        </Typography>
+      </Box>
 
       {/* Body */}
-      <div className="sidebar-body">
+      <Box sx={{ flex: 1, overflowY: "auto", p: 2, display: "flex", flexDirection: "column", gap: 2 }}>
+
         {view === "loading-categories" && (
-          <div className="loading-state">
-            <div className="spinner" />
-            <p>Analyzing email thread...</p>
-          </div>
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, gap: 2 }}>
+            <CircularProgress size={32} />
+            <Typography variant="body2" color="text.secondary">Analyzing email thread…</Typography>
+          </Box>
         )}
 
         {view === "error" && (
-          <div className="error-state">
-            <p className="error-message">{error}</p>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Alert severity="error" variant="outlined">{error}</Alert>
             {error?.includes("API key") && (
-              <button
-                className="btn btn-primary"
-                onClick={() => chrome.runtime.sendMessage({ type: "OPEN_OPTIONS" })}
-              >
+              <Button variant="contained" onClick={() => chrome.runtime.sendMessage({ type: "OPEN_OPTIONS" })}>
                 Open Settings
-              </button>
+              </Button>
             )}
-          </div>
+          </Box>
         )}
 
         {(view === "select-category" || view === "loading-draft") && (
@@ -133,32 +165,31 @@ export function Sidebar({ thread, settings, onClose }: Props) {
               onSelect={setSelectedCategory}
               onCustomInstructions={setCustomInstructions}
             />
+            <Divider />
             <ToneSelector tone={tone} onChange={setTone} />
-            <button
-              className="btn btn-primary submit-btn"
+            <Button
+              variant="contained"
+              fullWidth
+              size="large"
               onClick={handleSubmit}
-              disabled={view === "loading-draft" || (!selectedCategory && !customInstructions.trim())}
+              disabled={view === "loading-draft" || !canSubmit}
+              startIcon={view === "loading-draft" ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
             >
-              {view === "loading-draft" ? (
-                <><span className="spinner-sm" /> Drafting...</>
-              ) : (
-                "Generate Draft"
-              )}
-            </button>
+              {view === "loading-draft" ? "Drafting…" : "Generate Draft"}
+            </Button>
           </>
         )}
 
         {view === "view-drafts" && (
           <>
-            <button
-              className="btn btn-ghost back-btn"
-              onClick={() => {
-                setDrafts([]);
-                setView("select-category");
-              }}
+            <Button
+              variant="text"
+              startIcon={<ArrowBackIcon />}
+              onClick={() => { setDrafts([]); setView("select-category"); }}
+              sx={{ alignSelf: "flex-start", px: 0 }}
             >
-              ← Back to categories
-            </button>
+              Back to categories
+            </Button>
             <DraftViewer
               drafts={drafts}
               isGenerating={isGeneratingDraft}
@@ -167,7 +198,7 @@ export function Sidebar({ thread, settings, onClose }: Props) {
             />
           </>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

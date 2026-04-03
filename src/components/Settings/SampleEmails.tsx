@@ -1,4 +1,10 @@
 import React from "react";
+import {
+  Box, Card, CardHeader, CardContent,
+  TextField, IconButton, Button, Typography, Divider,
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
 
 interface Props {
   emails: string[];
@@ -6,46 +12,67 @@ interface Props {
 }
 
 export function SampleEmailsSection({ emails, onChange }: Props) {
-  const update = (index: number, value: string) => {
+  const update = (index: number, value: string) =>
     onChange(emails.map((e, i) => (i === index ? value : e)));
-  };
 
-  const remove = (index: number) => {
-    onChange(emails.filter((_, i) => i !== index));
-  };
+  const remove = (index: number) => onChange(emails.filter((_, i) => i !== index));
 
-  const add = () => {
-    onChange([...emails, ""]);
-  };
+  const add = () => onChange([...emails, ""]);
 
   return (
-    <section className="settings-section">
-      <h2>Sample Emails</h2>
-      <p className="section-desc">
-        Paste emails you've written in the past. The AI will use these to match your writing style and voice.
-      </p>
+    <Box className="flex flex-col gap-6">
+      <Box>
+        <Typography variant="h6" className="font-semibold mb-1">Sample Emails</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Paste emails you've written in the past. The AI will use these to match your writing style and voice when drafting replies.
+        </Typography>
+      </Box>
 
-      <div className="email-list">
+      <Divider />
+
+      <Box className="flex flex-col gap-4">
         {emails.map((email, i) => (
-          <div key={i} className="email-item">
-            <div className="email-item-header">
-              <span className="email-label">Email {i + 1}</span>
-              <button className="remove-btn" onClick={() => remove(i)} title="Remove">
-                Remove
-              </button>
-            </div>
-            <textarea
-              className="email-textarea"
-              placeholder="Paste an email you wrote here..."
-              value={email}
-              onChange={(e) => update(i, e.target.value)}
-              rows={6}
+          <Card key={i}>
+            <CardHeader
+              title={
+                <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Email {i + 1}
+                </Typography>
+              }
+              action={
+                <IconButton onClick={() => remove(i)} size="small">
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              }
+              sx={{ py: 1, px: 2, bgcolor: "grey.50", borderBottom: 1, borderColor: "divider" }}
             />
-          </div>
+            <CardContent sx={{ p: 0 }}>
+              <TextField
+                multiline
+                rows={6}
+                fullWidth
+                placeholder="Paste an email you wrote here..."
+                value={email}
+                onChange={(e) => update(i, e.target.value)}
+                variant="outlined"
+                sx={{
+                  "& .MuiOutlinedInput-root": { borderRadius: 0, border: "none" },
+                  "& .MuiOutlinedInput-notchedOutline": { border: "none" },
+                }}
+              />
+            </CardContent>
+          </Card>
         ))}
-      </div>
+      </Box>
 
-      <button className="add-btn" onClick={add}>+ Add sample email</button>
-    </section>
+      <Button
+        variant="outlined"
+        startIcon={<AddIcon />}
+        onClick={add}
+        sx={{ alignSelf: "flex-start", borderStyle: "dashed" }}
+      >
+        Add sample email
+      </Button>
+    </Box>
   );
 }

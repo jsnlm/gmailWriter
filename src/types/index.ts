@@ -17,8 +17,18 @@ export interface PersonalInfoEntry {
   value: string;
 }
 
+export type LLMProvider =
+  | "claude"
+  | "openai"
+  | "gemini"
+  | "deepseek"
+  | "mistral"
+  | "xai"
+  | "groq"
+  | "cohere";
+
 export interface LLMConfig {
-  provider: "claude" | "openai";
+  provider: LLMProvider;
   apiKey: string;
   model: string;
 }

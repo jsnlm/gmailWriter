@@ -1,4 +1,10 @@
 import React, { useState } from "react";
+import {
+  Box, Card, CardContent, Typography, TextField,
+  Button, Divider,
+} from "@mui/material";
+import ReplayIcon from "@mui/icons-material/Replay";
+import SendIcon from "@mui/icons-material/Send";
 
 interface DraftCardProps {
   draft: string;
@@ -10,20 +16,32 @@ function DraftCard({ draft, index, onInsert }: DraftCardProps) {
   const [text, setText] = useState(draft);
 
   return (
-    <div className="draft-card">
-      <div className="draft-header">
-        <span className="draft-label">Draft {index + 1}</span>
-      </div>
-      <textarea
-        className="draft-textarea"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={8}
-      />
-      <button className="btn btn-primary insert-btn" onClick={() => onInsert(text)}>
-        Insert into Gmail
-      </button>
-    </div>
+    <Card>
+      <Box sx={{ px: 2, py: 1, bgcolor: "grey.50", borderBottom: 1, borderColor: "divider" }}>
+        <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+          Draft {index + 1}
+        </Typography>
+      </Box>
+      <CardContent sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <TextField
+          multiline
+          rows={7}
+          fullWidth
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          size="small"
+          sx={{ "& .MuiOutlinedInput-root": { fontSize: 13 } }}
+        />
+        <Button
+          variant="contained"
+          fullWidth
+          startIcon={<SendIcon />}
+          onClick={() => onInsert(text)}
+        >
+          Insert into Gmail
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -36,18 +54,22 @@ interface Props {
 
 export function DraftViewer({ drafts, isGenerating, onGenerateAnother, onInsert }: Props) {
   return (
-    <div className="draft-viewer">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {drafts.map((draft, i) => (
         <DraftCard key={i} draft={draft} index={i} onInsert={onInsert} />
       ))}
 
-      <button
-        className="btn btn-secondary generate-more-btn"
+      <Divider />
+
+      <Button
+        variant="outlined"
+        fullWidth
+        startIcon={<ReplayIcon />}
         onClick={onGenerateAnother}
         disabled={isGenerating}
       >
-        {isGenerating ? "Generating..." : "Generate another variation"}
-      </button>
-    </div>
+        {isGenerating ? "Generating…" : "Generate another variation"}
+      </Button>
+    </Box>
   );
 }

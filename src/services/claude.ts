@@ -1,6 +1,50 @@
-import type { ThreadData, SyncSettings, LocalSettings } from "../types";
+import type { ThreadData, SyncSettings, LocalSettings, LLMProvider } from "../types";
 
 type AllSettings = SyncSettings & LocalSettings;
+
+// ── Provider registry ────────────────────────────────────────────────────────
+
+type ApiFormat = "anthropic" | "openai" | "gemini";
+
+interface ProviderConfig {
+  format: ApiFormat;
+  baseUrl: string;
+}
+
+export const PROVIDER_CONFIGS: Record<LLMProvider, ProviderConfig> = {
+  claude:    { format: "anthropic", baseUrl: "https://api.anthropic.com" },
+  openai:    { format: "openai",    baseUrl: "https://api.openai.com" },
+  gemini:    { format: "gemini",    baseUrl: "https://generativelanguage.googleapis.com" },
+  deepseek:  { format: "openai",    baseUrl: "https://api.deepseek.com" },
+  mistral:   { format: "openai",    baseUrl: "https://api.mistral.ai" },
+  xai:       { format: "openai",    baseUrl: "https://api.x.ai" },
+  groq:      { format: "openai",    baseUrl: "https://api.groq.com/openai" },
+  cohere:    { format: "openai",    baseUrl: "https://api.cohere.com/compatibility" },
+};
+
+export const PROVIDER_LABELS: Record<LLMProvider, string> = {
+  claude:   "Anthropic Claude",
+  openai:   "OpenAI",
+  gemini:   "Google Gemini",
+  deepseek: "DeepSeek",
+  mistral:  "Mistral AI",
+  xai:      "xAI (Grok)",
+  groq:     "Groq",
+  cohere:   "Cohere",
+};
+
+export const PROVIDER_MODELS: Record<LLMProvider, string[]> = {
+  claude:   ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
+  openai:   ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"],
+  gemini:   ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"],
+  deepseek: ["deepseek-chat", "deepseek-reasoner"],
+  mistral:  ["mistral-large-latest", "mistral-medium-latest", "mistral-small-latest"],
+  xai:      ["grok-3", "grok-3-mini", "grok-2-1212"],
+  groq:     ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it"],
+  cohere:   ["command-r-plus", "command-r", "command-r7b-12-2024"],
+};
+
+// ── Formatters ───────────────────────────────────────────────────────────────
 
 function formatThread(thread: ThreadData): string {
   const lines: string[] = [`Subject: ${thread.subject}`, ""];
@@ -17,8 +61,8 @@ function formatThread(thread: ThreadData): string {
 
 function formatPersonalInfo(settings: AllSettings): string {
   return settings.personalInfo
-    .filter((entry) => entry.key && entry.value)
-    .map((entry) => `${entry.key}: ${entry.value}`)
+    .filter((e) => e.key && e.value)
+    .map((e) => `${e.key}: ${e.value}`)
     .join("\n");
 }
 
@@ -29,15 +73,10 @@ function formatSampleEmails(settings: AllSettings): string {
     .join("\n\n");
 }
 
-async function callClaude(
-  settings: AllSettings,
-  systemPrompt: string,
-  userPrompt: string
-): Promise<string> {
-  const { apiKey, model } = settings.llmConfig;
-  if (!apiKey) throw new Error("No API key configured. Please add your API key in Settings.");
+// ── API callers ───────────────────────────────────────────────────────────────
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+async function callAnthropic(apiKey: string, model: string, system: string, user: string): Promise<string> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -45,39 +84,84 @@ async function callClaude(
       "anthropic-version": "2023-06-01",
       "anthropic-dangerous-direct-browser-access": "true",
     },
-    body: JSON.stringify({
-      model,
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-    }),
+    body: JSON.stringify({ model, max_tokens: 1024, system, messages: [{ role: "user", content: user }] }),
   });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error((err as { error?: { message?: string } }).error?.message ?? `API error ${response.status}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { error?: { message?: string } };
+    throw new Error(err.error?.message ?? `Anthropic API error ${res.status}`);
   }
-
-  const data = await response.json() as { content: { type: string; text: string }[] };
+  const data = await res.json() as { content: { type: string; text: string }[] };
   return data.content.find((c) => c.type === "text")?.text ?? "";
 }
 
-export async function generateCategories(
-  thread: ThreadData,
-  settings: AllSettings
-): Promise<string[]> {
-  const system = `You help users draft Gmail replies. Your job is to analyze an email thread and suggest specific, action-oriented response options tailored to the exact content of the thread.`;
+async function callOpenAICompatible(baseUrl: string, apiKey: string, model: string, system: string, user: string): Promise<string> {
+  const res = await fetch(`${baseUrl}/v1/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 1024,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { error?: { message?: string } };
+    throw new Error(err.error?.message ?? `API error ${res.status}`);
+  }
+  const data = await res.json() as { choices: { message: { content: string } }[] };
+  return data.choices[0]?.message?.content ?? "";
+}
 
-  const user = `Here is the email thread:\n\n${formatThread(thread)}\n\nSuggest 3-5 specific, action-oriented response options for the most recent email. Each option should describe a concrete thing the user could respond with (e.g. "Accept the meeting on Tuesday", "Decline and suggest Thursday instead", "Ask for the project brief before committing"). Make them specific to this thread's content, not generic.\n\nReturn ONLY a JSON array of strings. No other text.\nExample: ["Accept the proposal", "Request more details", "Decline politely"]`;
+async function callGemini(apiKey: string, model: string, system: string, user: string): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: user }] }],
+      systemInstruction: { parts: [{ text: system }] },
+      generationConfig: { maxOutputTokens: 1024 },
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { error?: { message?: string } };
+    throw new Error(err.error?.message ?? `Gemini API error ${res.status}`);
+  }
+  const data = await res.json() as { candidates: { content: { parts: { text: string }[] } }[] };
+  return data.candidates[0]?.content?.parts[0]?.text ?? "";
+}
 
-  const raw = await callClaude(settings, system, user);
+async function callLLM(settings: AllSettings, system: string, user: string): Promise<string> {
+  const { provider, apiKey, model } = settings.llmConfig;
+  if (!apiKey) throw new Error("No API key configured. Please add your API key in Settings.");
+
+  const config = PROVIDER_CONFIGS[provider] ?? PROVIDER_CONFIGS.claude;
+
+  switch (config.format) {
+    case "anthropic": return callAnthropic(apiKey, model, system, user);
+    case "gemini":    return callGemini(apiKey, model, system, user);
+    default:          return callOpenAICompatible(config.baseUrl, apiKey, model, system, user);
+  }
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
+export async function generateCategories(thread: ThreadData, settings: AllSettings): Promise<string[]> {
+  const system = `You help users draft Gmail replies. Analyze the email thread and suggest specific, action-oriented response options tailored to the exact content.`;
+  const user = `Here is the email thread:\n\n${formatThread(thread)}\n\nSuggest 3-5 specific, action-oriented response options for the most recent email. Make them specific to this thread's content, not generic.\n\nReturn ONLY a JSON array of strings. No other text.\nExample: ["Accept the proposal", "Request more details", "Decline politely"]`;
+
+  const raw = await callLLM(settings, system, user);
   try {
-    // Strip any markdown code fences if present
     const cleaned = raw.replace(/```json\n?|\n?```/g, "").trim();
     const parsed = JSON.parse(cleaned) as unknown;
     if (Array.isArray(parsed)) return parsed as string[];
   } catch {
-    // Fallback: extract quoted strings
     const matches = raw.match(/"([^"]+)"/g);
     if (matches) return matches.map((m) => m.replace(/"/g, ""));
   }
@@ -93,7 +177,6 @@ export async function generateDraft(
 ): Promise<string> {
   const personalInfo = formatPersonalInfo(settings);
   const sampleEmails = formatSampleEmails(settings);
-
   const customRules = settings.promptInstructions?.trim()
     ? `\nAdditional instructions:\n${settings.promptInstructions.trim()}`
     : "";
@@ -113,5 +196,5 @@ Rules:
 
   const user = `Here is the email thread:\n\n${formatThread(thread)}\n\n${intentLine}\nTone: ${tone}\n\nWrite the email reply body now.`;
 
-  return callClaude(settings, system, user);
+  return callLLM(settings, system, user);
 }

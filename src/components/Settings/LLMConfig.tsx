@@ -1,83 +1,101 @@
 import React, { useState } from "react";
-import type { LLMConfig } from "../../types";
-
-const MODELS: Record<string, { label: string; models: string[] }> = {
-  claude: {
-    label: "Anthropic Claude",
-    models: [
-      "claude-opus-4-6",
-      "claude-sonnet-4-6",
-      "claude-haiku-4-5-20251001",
-    ],
-  },
-  openai: {
-    label: "OpenAI",
-    models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"],
-  },
-};
+import {
+  FormControl, InputLabel, Select, MenuItem,
+  TextField, InputAdornment, IconButton,
+  Typography, Alert, Box, Divider,
+} from "@mui/material";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import type { LLMConfig, LLMProvider } from "../../types";
+import { PROVIDER_LABELS, PROVIDER_MODELS } from "../../services/claude";
 
 interface Props {
   config: LLMConfig;
   onChange: (config: LLMConfig) => void;
 }
 
+const API_KEY_HINTS: Record<LLMProvider, string> = {
+  claude:   "Get your key at console.anthropic.com",
+  openai:   "Get your key at platform.openai.com",
+  gemini:   "Get your key at aistudio.google.com",
+  deepseek: "Get your key at platform.deepseek.com",
+  mistral:  "Get your key at console.mistral.ai",
+  xai:      "Get your key at console.x.ai",
+  groq:     "Get your key at console.groq.com",
+  cohere:   "Get your key at dashboard.cohere.com",
+};
+
 export function LLMConfigSection({ config, onChange }: Props) {
   const [showKey, setShowKey] = useState(false);
+  const models = PROVIDER_MODELS[config.provider] ?? [];
 
-  const providerModels = MODELS[config.provider]?.models ?? [];
+  const handleProviderChange = (provider: LLMProvider) => {
+    onChange({ ...config, provider, model: PROVIDER_MODELS[provider]?.[0] ?? "" });
+  };
 
   return (
-    <section className="settings-section">
-      <h2>LLM Configuration</h2>
-      <p className="section-desc">Configure which AI model powers the email drafting.</p>
+    <Box className="flex flex-col gap-6">
+      <Box>
+        <Typography variant="h6" className="font-semibold mb-1">LLM Configuration</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Configure which AI provider and model powers the email drafting.
+        </Typography>
+      </Box>
 
-      <div className="field-group">
-        <label>Provider</label>
-        <select
+      <Divider />
+
+      <FormControl fullWidth>
+        <InputLabel>Provider</InputLabel>
+        <Select
           value={config.provider}
-          onChange={(e) => {
-            const provider = e.target.value as LLMConfig["provider"];
-            const defaultModel = MODELS[provider]?.models[0] ?? "";
-            onChange({ ...config, provider, model: defaultModel });
-          }}
+          label="Provider"
+          onChange={(e) => handleProviderChange(e.target.value as LLMProvider)}
         >
-          {Object.entries(MODELS).map(([key, val]) => (
-            <option key={key} value={key}>{val.label}</option>
+          {(Object.keys(PROVIDER_LABELS) as LLMProvider[]).map((key) => (
+            <MenuItem key={key} value={key}>{PROVIDER_LABELS[key]}</MenuItem>
           ))}
-        </select>
-      </div>
+        </Select>
+      </FormControl>
 
-      <div className="field-group">
-        <label>API Key</label>
-        <div className="input-with-action">
-          <input
-            type={showKey ? "text" : "password"}
-            value={config.apiKey}
-            onChange={(e) => onChange({ ...config, apiKey: e.target.value })}
-            placeholder={config.provider === "claude" ? "sk-ant-..." : "sk-..."}
-          />
-          <button className="toggle-btn" onClick={() => setShowKey((v) => !v)}>
-            {showKey ? "Hide" : "Show"}
-          </button>
-        </div>
-        <p className="field-hint">
-          {config.provider === "claude"
-            ? "Get your API key from console.anthropic.com"
-            : "Get your API key from platform.openai.com"}
-        </p>
-      </div>
+      <TextField
+        label="API Key"
+        fullWidth
+        type={showKey ? "text" : "password"}
+        value={config.apiKey}
+        onChange={(e) => onChange({ ...config, apiKey: e.target.value })}
+        placeholder={config.provider === "claude" ? "sk-ant-..." : config.provider === "gemini" ? "AIza..." : "sk-..."}
+        helperText={API_KEY_HINTS[config.provider]}
+        slotProps={{
+          input: {
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setShowKey((v) => !v)} edge="end">
+                  {showKey ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          },
+        }}
+      />
 
-      <div className="field-group">
-        <label>Model</label>
-        <select
-          value={config.model}
+      <FormControl fullWidth>
+        <InputLabel>Model</InputLabel>
+        <Select
+          value={models.includes(config.model) ? config.model : models[0] ?? ""}
+          label="Model"
           onChange={(e) => onChange({ ...config, model: e.target.value })}
         >
-          {providerModels.map((m) => (
-            <option key={m} value={m}>{m}</option>
+          {models.map((m) => (
+            <MenuItem key={m} value={m}>{m}</MenuItem>
           ))}
-        </select>
-      </div>
-    </section>
+        </Select>
+      </FormControl>
+
+      {config.provider === "gemini" && (
+        <Alert severity="info" variant="outlined">
+          Gemini uses your API key as a URL query parameter. Make sure your key has the Generative Language API enabled.
+        </Alert>
+      )}
+    </Box>
   );
 }

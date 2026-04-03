@@ -1,4 +1,5 @@
 import React from "react";
+import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 
 const TONES = ["Casual", "Friendly", "Formal", "Professional", "Concise", "Warm"];
 
@@ -9,17 +10,18 @@ interface Props {
 
 export function ToneSelector({ tone, onChange }: Props) {
   return (
-    <div className="tone-selector">
-      <label htmlFor="tone-select">Tone</label>
-      <select
-        id="tone-select"
+    <FormControl fullWidth size="small">
+      <InputLabel>Tone</InputLabel>
+      <Select
         value={tone}
+        label="Tone"
         onChange={(e) => onChange(e.target.value)}
+        MenuProps={{ disablePortal: true }}
       >
         {TONES.map((t) => (
-          <option key={t} value={t}>{t}</option>
+          <MenuItem key={t} value={t}>{t}</MenuItem>
         ))}
-      </select>
-    </div>
+      </Select>
+    </FormControl>
   );
 }

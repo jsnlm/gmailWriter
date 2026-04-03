@@ -1,7 +1,6 @@
-import React from "react";
 import { createRoot } from "react-dom/client";
 import { SettingsPage } from "../components/Settings/SettingsPage";
-import "./styles.css";
+import "../tailwind.css";
 
 const root = document.getElementById("root")!;
 createRoot(root).render(<SettingsPage />);
