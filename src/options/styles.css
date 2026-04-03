@@ -1,0 +1,310 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f8f9fa;
+  color: #1a1a1a;
+  min-height: 100vh;
+}
+
+.loading-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: #5f6368;
+  font-size: 15px;
+}
+
+/* Header */
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.settings-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-icon {
+  color: #1a73e8;
+  font-size: 20px;
+}
+
+.save-btn {
+  padding: 10px 24px;
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.save-btn:hover:not(:disabled) { background: #1557b0; }
+.save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.save-btn.saved { background: #188038; }
+
+/* Layout */
+.settings-layout {
+  display: flex;
+  min-height: calc(100vh - 65px);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.settings-nav {
+  width: 200px;
+  flex-shrink: 0;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #3c4043;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.nav-item:hover { background: #e8eaed; }
+.nav-item.active { background: #e8f0fe; color: #1a73e8; font-weight: 500; }
+
+.settings-main {
+  flex: 1;
+  padding: 32px;
+  overflow-y: auto;
+}
+
+/* Section */
+.settings-section {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-section h2 {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.section-desc {
+  font-size: 13px;
+  color: #5f6368;
+  line-height: 1.5;
+  margin-top: -8px;
+}
+
+/* Field group */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3c4043;
+}
+
+.field-group input,
+.field-group select {
+  padding: 10px 12px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1a1a1a;
+  font-family: inherit;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.field-group input:focus,
+.field-group select:focus {
+  border-color: #1a73e8;
+}
+
+.field-hint {
+  font-size: 12px;
+  color: #80868b;
+}
+
+.input-with-action {
+  display: flex;
+  gap: 8px;
+}
+
+.input-with-action input {
+  flex: 1;
+}
+
+.toggle-btn {
+  padding: 10px 14px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  background: #f8f9fa;
+  color: #3c4043;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.toggle-btn:hover { background: #e8eaed; }
+
+/* Personal info */
+.info-list { display: flex; flex-direction: column; gap: 10px; }
+
+.info-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.info-key {
+  width: 140px;
+  flex-shrink: 0;
+  padding: 9px 12px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+
+.info-key:focus { border-color: #1a73e8; }
+
+.info-value {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+
+.info-value:focus { border-color: #1a73e8; }
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: #9aa0a6;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  transition: color 0.15s, background 0.15s;
+}
+
+.remove-btn:hover { color: #d93025; background: #fce8e6; }
+
+.add-btn {
+  align-self: flex-start;
+  padding: 9px 16px;
+  border: 1.5px dashed #e0e0e0;
+  border-radius: 8px;
+  background: none;
+  color: #5f6368;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.add-btn:hover {
+  border-color: #1a73e8;
+  color: #1a73e8;
+  background: #e8f0fe;
+}
+
+/* Sample emails */
+.email-list { display: flex; flex-direction: column; gap: 16px; }
+
+.email-item {
+  border: 1.5px solid #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.email-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.email-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5f6368;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.email-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1a1a1a;
+  resize: vertical;
+  outline: none;
+  line-height: 1.5;
+  background: #fff;
+}
+
+.instructions-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1a1a1a;
+  resize: vertical;
+  outline: none;
+  line-height: 1.6;
+  background: #fff;
+  transition: border-color 0.15s;
+}
+
+.instructions-textarea:focus {
+  border-color: #1a73e8;
+}
