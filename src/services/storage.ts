@@ -15,8 +15,11 @@ const DEFAULT_SYNC: SyncSettings = {
   promptInstructions: "",
 };
 
+export const SIDEBAR_DEFAULT_WIDTH = 380;
+
 const DEFAULT_LOCAL: LocalSettings = {
   sampleEmails: [],
+  sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
 };
 
 export async function getSyncSettings(): Promise<SyncSettings> {
@@ -33,9 +36,10 @@ export async function saveSyncSettings(settings: Partial<SyncSettings>): Promise
 }
 
 export async function getLocalSettings(): Promise<LocalSettings> {
-  const result = await chrome.storage.local.get(["sampleEmails"]);
+  const result = await chrome.storage.local.get(["sampleEmails", "sidebarWidth"]);
   return {
     sampleEmails: (result.sampleEmails as string[]) ?? DEFAULT_LOCAL.sampleEmails,
+    sidebarWidth: (result.sidebarWidth as number) ?? DEFAULT_LOCAL.sidebarWidth,
   };
 }
 

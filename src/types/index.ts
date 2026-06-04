@@ -41,6 +41,7 @@ export interface SyncSettings {
 
 export interface LocalSettings {
   sampleEmails: string[];
+  sidebarWidth: number;
 }
 
 export type MessageType =

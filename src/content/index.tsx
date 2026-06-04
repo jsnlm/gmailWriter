@@ -5,12 +5,14 @@ import { CacheProvider } from "@emotion/react";
 import { ThemeProvider } from "@mui/material/styles";
 import { Sidebar } from "../components/Sidebar/Sidebar";
 import { extractThreadData } from "./gmail";
-import { getAllSettings } from "../services/storage";
+import { getAllSettings, saveLocalSettings, SIDEBAR_DEFAULT_WIDTH } from "../services/storage";
 import { gmailTheme } from "../theme";
 import type { ThreadData, SyncSettings, LocalSettings } from "../types";
 
 const SIDEBAR_ID = "gmail-drafter-root";
 const INJECT_BTN_CLASS = "gmail-drafter-btn";
+const SIDEBAR_MIN_WIDTH = 280;
+const SIDEBAR_MAX_WIDTH = 700;
 
 // ── Minimal host styles — MUI/emotion handles everything inside the shadow ────
 
@@ -29,6 +31,19 @@ const HOST_STYLES = `
     -webkit-font-smoothing: antialiased;
   }
   * { box-sizing: border-box; }
+  #resize-handle {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 6px;
+    height: 100%;
+    cursor: ew-resize;
+    z-index: 1;
+    background: transparent;
+  }
+  #resize-handle:hover {
+    background: rgba(26, 115, 232, 0.2);
+  }
 `;
 
 // ── Sidebar host ──────────────────────────────────────────────────────────────
@@ -37,6 +52,7 @@ let sidebarHost: HTMLElement | null = null;
 let reactRoot: ReturnType<typeof createRoot> | null = null;
 let isSidebarOpen = false;
 let currentThreadUrl = "";
+let currentWidth = SIDEBAR_DEFAULT_WIDTH;
 
 function renderSidebar(thread: ThreadData, settings: SyncSettings & LocalSettings) {
   reactRoot!.render(
@@ -63,6 +79,7 @@ async function openSidebar() {
   }
 
   const settings = await getAllSettings();
+  currentWidth = settings.sidebarWidth ?? SIDEBAR_DEFAULT_WIDTH;
 
   if (!sidebarHost) {
     sidebarHost = document.createElement("div");
@@ -76,6 +93,36 @@ async function openSidebar() {
     styleEl.textContent = HOST_STYLES;
     shadow.appendChild(styleEl);
 
+    // Resize handle
+    const resizeHandle = document.createElement("div");
+    resizeHandle.id = "resize-handle";
+    shadow.appendChild(resizeHandle);
+
+    resizeHandle.addEventListener("mousedown", (e: MouseEvent) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startWidth = currentWidth;
+
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        const newWidth = Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, startWidth - (moveEvent.clientX - startX)));
+        currentWidth = newWidth;
+        sidebarHost!.style.width = `${newWidth}px`;
+        const mainContent =
+          document.querySelector<HTMLElement>(".bkK") ??
+          document.querySelector<HTMLElement>("[role='main']");
+        if (mainContent) mainContent.style.marginRight = `${newWidth}px`;
+      };
+
+      const onMouseUp = () => {
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        saveLocalSettings({ sidebarWidth: currentWidth });
+      };
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    });
+
     // Emotion injects MUI styles into the shadow root directly
     emotionCache = createCache({ key: "gd", container: shadow as unknown as HTMLElement, prepend: true });
 
@@ -84,6 +131,8 @@ async function openSidebar() {
     shadow.appendChild(mountPoint);
     reactRoot = createRoot(mountPoint);
   }
+
+  sidebarHost.style.width = `${currentWidth}px`;
 
   currentThreadUrl = window.location.href;
   renderSidebar(thread, settings);
@@ -109,7 +158,7 @@ function pushGmailContent(open: boolean) {
     document.querySelector<HTMLElement>("[role='main']");
   if (mainContent) {
     mainContent.style.transition = "margin-right 0.25s ease";
-    mainContent.style.marginRight = open ? "380px" : "0";
+    mainContent.style.marginRight = open ? `${currentWidth}px` : "0";
   }
 }
 
