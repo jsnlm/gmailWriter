@@ -49,14 +49,14 @@ export function Sidebar({ thread, settings, onClose }: Props) {
     );
   }, []);
 
-  const requestDraft = useCallback(() => {
+  const requestDraft = useCallback((previousDrafts: string[] = []) => {
     const category = selectedCategory ?? "";
     const instructions = customInstructions;
 
     setIsGeneratingDraft(true);
 
     chrome.runtime.sendMessage(
-      { type: "GET_DRAFT", thread, category, tone, customInstructions: instructions, settings },
+      { type: "GET_DRAFT", thread, category, tone, customInstructions: instructions, settings, previousDrafts },
       (response: { draft?: string; error?: string }) => {
         setIsGeneratingDraft(false);
         if (chrome.runtime.lastError || response?.error) {
@@ -72,7 +72,7 @@ export function Sidebar({ thread, settings, onClose }: Props) {
   const handleSubmit = () => {
     if (!selectedCategory && !customInstructions.trim()) return;
     setDrafts([]);
-    requestDraft();
+    requestDraft([]);
   };
 
   const handleInsert = (text: string) => {
@@ -185,7 +185,7 @@ export function Sidebar({ thread, settings, onClose }: Props) {
                 <DraftViewer
                   drafts={drafts}
                   isGenerating={isGeneratingDraft}
-                  onGenerateAnother={requestDraft}
+                  onGenerateAnother={() => requestDraft(drafts)}
                   onInsert={handleInsert}
                 />
               </>

@@ -23,6 +23,7 @@ chrome.runtime.onMessage.addListener(
       category?: string;
       tone?: string;
       customInstructions?: string;
+      previousDrafts?: string[];
     },
     _sender,
     sendResponse
@@ -40,7 +41,7 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === "GET_DRAFT") {
-      const { thread, settings, category, tone, customInstructions } = message;
+      const { thread, settings, category, tone, customInstructions, previousDrafts } = message;
       if (!thread || !settings) {
         sendResponse({ error: "Missing thread or settings" });
         return true;
@@ -50,7 +51,8 @@ chrome.runtime.onMessage.addListener(
         category ?? "",
         tone ?? "Casual",
         customInstructions ?? "",
-        settings
+        settings,
+        previousDrafts ?? []
       )
         .then((draft) => sendResponse({ draft }))
         .catch((err: Error) => sendResponse({ error: err.message }));

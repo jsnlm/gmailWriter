@@ -173,12 +173,13 @@ export async function generateDraft(
   category: string,
   tone: string,
   customInstructions: string,
-  settings: AllSettings
+  settings: AllSettings,
+  previousDrafts: string[] = []
 ): Promise<string> {
   const personalInfo = formatPersonalInfo(settings);
   const sampleEmails = formatSampleEmails(settings);
   const customRules = settings.promptInstructions?.trim()
-    ? `\nAdditional instructions:\n${settings.promptInstructions.trim()}`
+    ? `\n The following are the instructions of how to draft the email. Make sure that all instruction are followed:\n${settings.promptInstructions.trim()}`
     : "";
 
   const system = `You are a writing assistant helping ${thread.currentUser.name || "the user"} draft email replies. Write in first person as if you are ${thread.currentUser.name || "the user"}.
@@ -194,7 +195,11 @@ Rules:
     ? `Custom instructions: ${customInstructions}`
     : `Response intent: ${category}`;
 
-  const user = `Here is the email thread:\n\n${formatThread(thread)}\n\n${intentLine}\nTone: ${tone}\n\nWrite the email reply body now.`;
+  const previousDraftsSection = previousDrafts.length > 0
+    ? `\nThe following drafts have already been generated. Write something distinctly different — vary the phrasing, structure, opening, and overall approach while still fulfilling the same intent:\n\n${previousDrafts.map((d, i) => `[Draft ${i + 1}]\n${d}`).join("\n\n")}\n`
+    : "";
+
+  const user = `Here is the email thread:\n\n${formatThread(thread)}\n\n${intentLine}\nTone: ${tone}\n${previousDraftsSection}\nWrite the email reply body now.`;
 
   return callLLM(settings, system, user);
 }
