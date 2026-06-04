@@ -10,12 +10,13 @@ interface Props {
   customInstructions: string;
   onSelect: (category: string) => void;
   onCustomInstructions: (text: string) => void;
+  showSuggestions: boolean;
 }
 
 export function CategorySelector({
-  categories, selected, customInstructions, onSelect, onCustomInstructions,
+  categories, selected, customInstructions, onSelect, onCustomInstructions, showSuggestions,
 }: Props) {
-  const [showCustom, setShowCustom] = useState(false);
+  const [showCustom, setShowCustom] = useState(!showSuggestions);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -24,65 +25,68 @@ export function CategorySelector({
       </Typography>
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        {categories.map((cat) => {
-          const isSelected = selected === cat && !showCustom;
-          return (
+        {showSuggestions && (
+          <>
+            {categories.map((cat) => {
+              const isSelected = selected === cat && !showCustom;
+              return (
+                <Paper
+                  key={cat}
+                  component={ButtonBase}
+                  variant="outlined"
+                  onClick={() => { onSelect(cat); setShowCustom(false); }}
+                  sx={{
+                    textAlign: "left",
+                    p: "10px 14px",
+                    borderRadius: 2,
+                    fontSize: 13,
+                    lineHeight: 1.4,
+                    width: "100%",
+                    display: "block",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    bgcolor: isSelected ? "primary.50" : "background.paper",
+                    borderColor: isSelected ? "primary.main" : "divider",
+                    color: isSelected ? "primary.main" : "text.primary",
+                    fontWeight: isSelected ? 500 : 400,
+                    "&:hover": {
+                      bgcolor: "primary.50",
+                      borderColor: "primary.main",
+                      color: "primary.main",
+                    },
+                  }}
+                >
+                  {cat}
+                </Paper>
+              );
+            })}
             <Paper
-              key={cat}
               component={ButtonBase}
               variant="outlined"
-              onClick={() => { onSelect(cat); setShowCustom(false); }}
+              onClick={() => { setShowCustom(true); onSelect(""); }}
               sx={{
                 textAlign: "left",
                 p: "10px 14px",
                 borderRadius: 2,
                 fontSize: 13,
-                lineHeight: 1.4,
                 width: "100%",
-                display: "block",
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
                 cursor: "pointer",
                 transition: "all 0.15s",
-                bgcolor: isSelected ? "primary.50" : "background.paper",
-                borderColor: isSelected ? "primary.main" : "divider",
-                color: isSelected ? "primary.main" : "text.primary",
-                fontWeight: isSelected ? 500 : 400,
-                "&:hover": {
-                  bgcolor: "primary.50",
-                  borderColor: "primary.main",
-                  color: "primary.main",
-                },
+                bgcolor: showCustom ? "primary.50" : "background.paper",
+                borderColor: showCustom ? "primary.main" : "divider",
+                borderStyle: "dashed",
+                color: showCustom ? "primary.main" : "text.secondary",
+                "&:hover": { bgcolor: "primary.50", borderColor: "primary.main", color: "primary.main" },
               }}
             >
-              {cat}
+              <AddIcon sx={{ fontSize: 16 }} />
+              Add your own instructions
             </Paper>
-          );
-        })}
-
-        <Paper
-          component={ButtonBase}
-          variant="outlined"
-          onClick={() => { setShowCustom(true); onSelect(""); }}
-          sx={{
-            textAlign: "left",
-            p: "10px 14px",
-            borderRadius: 2,
-            fontSize: 13,
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            gap: 0.5,
-            cursor: "pointer",
-            transition: "all 0.15s",
-            bgcolor: showCustom ? "primary.50" : "background.paper",
-            borderColor: showCustom ? "primary.main" : "divider",
-            borderStyle: "dashed",
-            color: showCustom ? "primary.main" : "text.secondary",
-            "&:hover": { bgcolor: "primary.50", borderColor: "primary.main", color: "primary.main" },
-          }}
-        >
-          <AddIcon sx={{ fontSize: 16 }} />
-          Add your own instructions
-        </Paper>
+          </>
+        )}
       </Box>
 
       {showCustom && (

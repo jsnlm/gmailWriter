@@ -13,6 +13,7 @@ const DEFAULT_SYNC: SyncSettings = {
     model: "claude-opus-4-6",
   },
   promptInstructions: "",
+  showSuggestedResponses: true,
 };
 
 export const SIDEBAR_DEFAULT_WIDTH = 380;
@@ -23,11 +24,12 @@ const DEFAULT_LOCAL: LocalSettings = {
 };
 
 export async function getSyncSettings(): Promise<SyncSettings> {
-  const result = await chrome.storage.sync.get(["personalInfo", "llmConfig", "promptInstructions"]);
+  const result = await chrome.storage.sync.get(["personalInfo", "llmConfig", "promptInstructions", "showSuggestedResponses"]);
   return {
     personalInfo: (result.personalInfo as PersonalInfoEntry[]) ?? DEFAULT_SYNC.personalInfo,
     llmConfig: (result.llmConfig as LLMConfig) ?? DEFAULT_SYNC.llmConfig,
     promptInstructions: (result.promptInstructions as string) ?? DEFAULT_SYNC.promptInstructions,
+    showSuggestedResponses: (result.showSuggestedResponses as boolean) ?? DEFAULT_SYNC.showSuggestedResponses,
   };
 }
 

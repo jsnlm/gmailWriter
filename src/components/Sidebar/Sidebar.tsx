@@ -5,7 +5,6 @@ import {
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import CloseIcon from "@mui/icons-material/Close";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import type { ThreadData, SyncSettings, LocalSettings } from "../../types";
 import { CategorySelector } from "./CategorySelector";
@@ -13,7 +12,7 @@ import { ToneSelector } from "./ToneSelector";
 import { DraftViewer } from "./DraftViewer";
 import { insertIntoCompose } from "../../content/compose";
 
-type View = "loading-categories" | "select-category" | "loading-draft" | "view-drafts" | "error";
+type View = "loading-categories" | "select-category" | "error";
 
 interface Props {
   thread: ThreadData;
@@ -32,6 +31,10 @@ export function Sidebar({ thread, settings, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!settings.showSuggestedResponses) {
+      setView("select-category");
+      return;
+    }
     chrome.runtime.sendMessage(
       { type: "GET_CATEGORIES", thread, settings },
       (response: { categories?: string[]; error?: string }) => {
@@ -51,7 +54,6 @@ export function Sidebar({ thread, settings, onClose }: Props) {
     const instructions = customInstructions;
 
     setIsGeneratingDraft(true);
-    if (drafts.length === 0) setView("loading-draft");
 
     chrome.runtime.sendMessage(
       { type: "GET_DRAFT", thread, category, tone, customInstructions: instructions, settings },
@@ -62,11 +64,10 @@ export function Sidebar({ thread, settings, onClose }: Props) {
           setView("error");
         } else if (response.draft) {
           setDrafts((prev) => [...prev, response.draft!]);
-          setView("view-drafts");
         }
       }
     );
-  }, [selectedCategory, customInstructions, tone, thread, settings, drafts.length]);
+  }, [selectedCategory, customInstructions, tone, thread, settings]);
 
   const handleSubmit = () => {
     if (!selectedCategory && !customInstructions.trim()) return;
@@ -156,7 +157,7 @@ export function Sidebar({ thread, settings, onClose }: Props) {
           </Box>
         )}
 
-        {(view === "select-category" || view === "loading-draft") && (
+        {view === "select-category" && (
           <>
             <CategorySelector
               categories={categories}
@@ -164,6 +165,7 @@ export function Sidebar({ thread, settings, onClose }: Props) {
               customInstructions={customInstructions}
               onSelect={setSelectedCategory}
               onCustomInstructions={setCustomInstructions}
+              showSuggestions={settings.showSuggestedResponses}
             />
             <Divider />
             <ToneSelector tone={tone} onChange={setTone} />
@@ -172,30 +174,22 @@ export function Sidebar({ thread, settings, onClose }: Props) {
               fullWidth
               size="large"
               onClick={handleSubmit}
-              disabled={view === "loading-draft" || !canSubmit}
-              startIcon={view === "loading-draft" ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
+              disabled={isGeneratingDraft || !canSubmit}
+              startIcon={isGeneratingDraft ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
             >
-              {view === "loading-draft" ? "Drafting…" : "Generate Draft"}
+              {isGeneratingDraft ? "Drafting…" : "Generate Draft"}
             </Button>
-          </>
-        )}
-
-        {view === "view-drafts" && (
-          <>
-            <Button
-              variant="text"
-              startIcon={<ArrowBackIcon />}
-              onClick={() => { setDrafts([]); setView("select-category"); }}
-              sx={{ alignSelf: "flex-start", px: 0 }}
-            >
-              Back to categories
-            </Button>
-            <DraftViewer
-              drafts={drafts}
-              isGenerating={isGeneratingDraft}
-              onGenerateAnother={generateDraft}
-              onInsert={handleInsert}
-            />
+            {drafts.length > 0 && (
+              <>
+                <Divider />
+                <DraftViewer
+                  drafts={drafts}
+                  isGenerating={isGeneratingDraft}
+                  onGenerateAnother={generateDraft}
+                  onInsert={handleInsert}
+                />
+              </>
+            )}
           </>
         )}
       </Box>

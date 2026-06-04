@@ -11,11 +11,12 @@ import { SampleEmailsSection } from "./SampleEmails";
 import { PersonalInfoSection } from "./PersonalInfo";
 import { LLMConfigSection } from "./LLMConfig";
 import { PromptInstructionsSection } from "./PromptInstructions";
+import { DisplaySettingsSection } from "./DisplaySettings";
 import { getSyncSettings, saveSyncSettings, getLocalSettings, saveLocalSettings } from "../../services/storage";
 import { gmailTheme } from "../../theme";
 import type { SyncSettings, LocalSettings } from "../../types";
 
-type Tab = "llm" | "writing" | "personal" | "emails";
+type Tab = "llm" | "writing" | "personal" | "emails" | "display";
 
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("llm");
@@ -38,7 +39,7 @@ export function SettingsPage() {
     setSaving(true);
     try {
       await Promise.all([
-        saveSyncSettings({ personalInfo: sync.personalInfo, llmConfig: sync.llmConfig, promptInstructions: sync.promptInstructions }),
+        saveSyncSettings({ personalInfo: sync.personalInfo, llmConfig: sync.llmConfig, promptInstructions: sync.promptInstructions, showSuggestedResponses: sync.showSuggestedResponses }),
         saveLocalSettings({ sampleEmails: local.sampleEmails }),
       ]);
       setSnackbar({ open: true, message: "Settings saved", severity: "success" });
@@ -93,6 +94,7 @@ export function SettingsPage() {
             <Tab label="Writing Instructions" value="writing" />
             <Tab label="Personal Info" value="personal" />
             <Tab label="Sample Emails" value="emails" />
+            <Tab label="Display" value="display" />
           </Tabs>
         </AppBar>
 
@@ -119,6 +121,12 @@ export function SettingsPage() {
             <SampleEmailsSection
               emails={local.sampleEmails}
               onChange={(sampleEmails) => setLocal({ ...local, sampleEmails })}
+            />
+          )}
+          {activeTab === "display" && (
+            <DisplaySettingsSection
+              showSuggestedResponses={sync.showSuggestedResponses}
+              onChange={(showSuggestedResponses) => setSync({ ...sync, showSuggestedResponses })}
             />
           )}
         </Container>

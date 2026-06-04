@@ -37,6 +37,7 @@ export interface SyncSettings {
   personalInfo: PersonalInfoEntry[];
   llmConfig: LLMConfig;
   promptInstructions: string;
+  showSuggestedResponses: boolean;
 }
 
 export interface LocalSettings {
