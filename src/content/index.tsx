@@ -252,13 +252,12 @@ function createDraftButton(): HTMLElement {
 }
 
 function injectDraftButton() {
-  const replyBtns = document.querySelectorAll<HTMLElement>(
-    '[data-tooltip="Reply"], [aria-label="Reply"]'
+  const containers = document.querySelectorAll<HTMLElement>(
+    ':has( > [data-tooltip="Reply"]), :has( > [aria-label="Reply"])'
   );
-  replyBtns.forEach((replyBtn) => {
-    const container = replyBtn.parentElement;
-    if (!container || container.querySelector(`.${INJECT_BTN_CLASS}`)) return;
-    replyBtn.insertAdjacentElement("afterend", createDraftButton());
+  containers.forEach((container) => {
+    if (container.nextElementSibling?.classList.contains(INJECT_BTN_CLASS)) return;
+    container.insertAdjacentElement("afterend", createDraftButton());
   });
 }
 
