@@ -6,7 +6,6 @@ import {
 } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { SampleEmailsSection } from "./SampleEmails";
 import { PersonalInfoSection } from "./PersonalInfo";
 import { LLMConfigSection } from "./LLMConfig";
@@ -70,7 +69,7 @@ export function SettingsPage() {
           sx={{ bgcolor: "background.paper", borderBottom: 1, borderColor: "divider" }}
         >
           <Toolbar>
-            <AutoAwesomeIcon sx={{ color: "primary.main", mr: 1.5 }} />
+            <img src={chrome.runtime.getURL('public/icons/icon128.png')} alt="" style={{ width: 24, height: 24, marginRight: 12 }} />
             <Typography variant="h6" sx={{ color: "text.primary", flexGrow: 1, fontWeight: 600 }}>
               Gmail AI Drafter — Settings
             </Typography>

@@ -107,7 +107,7 @@ export function Sidebar({ thread, settings, onClose }: Props) {
         bgcolor: "grey.50",
         flexShrink: 0,
       }}>
-        <AutoAwesomeIcon sx={{ color: "primary.main", fontSize: 20, mr: 1 }} />
+        <img src={chrome.runtime.getURL('public/icons/icon128.png')} alt="" style={{ width: 20, height: 20, marginRight: 8 }} />
         <Typography variant="subtitle1" fontWeight={600} sx={{ flexGrow: 1, color: "text.primary" }}>
           AI Drafter
         </Typography>
