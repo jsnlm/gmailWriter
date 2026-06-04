@@ -49,7 +49,7 @@ export function Sidebar({ thread, settings, onClose }: Props) {
     );
   }, []);
 
-  const generateDraft = useCallback(() => {
+  const requestDraft = useCallback(() => {
     const category = selectedCategory ?? "";
     const instructions = customInstructions;
 
@@ -72,7 +72,7 @@ export function Sidebar({ thread, settings, onClose }: Props) {
   const handleSubmit = () => {
     if (!selectedCategory && !customInstructions.trim()) return;
     setDrafts([]);
-    generateDraft();
+    requestDraft();
   };
 
   const handleInsert = (text: string) => {
@@ -185,7 +185,7 @@ export function Sidebar({ thread, settings, onClose }: Props) {
                 <DraftViewer
                   drafts={drafts}
                   isGenerating={isGeneratingDraft}
-                  onGenerateAnother={generateDraft}
+                  onGenerateAnother={requestDraft}
                   onInsert={handleInsert}
                 />
               </>
