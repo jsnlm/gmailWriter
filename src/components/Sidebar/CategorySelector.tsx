@@ -92,13 +92,14 @@ export function CategorySelector({
       {showCustom && (
         <TextField
           multiline
-          rows={3}
+          rows={6}
           fullWidth
           placeholder="Describe what you want to say…"
           value={customInstructions}
           onChange={(e) => onCustomInstructions(e.target.value)}
           autoFocus
           size="small"
+          slotProps={{ htmlInput: { style: { resize: "vertical" } } }}
         />
       )}
     </Box>
