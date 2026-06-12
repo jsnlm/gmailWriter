@@ -24,6 +24,9 @@ export function DisplaySettingsSection({ showSuggestedResponses, onChange }: Pro
               <Typography variant="caption" color="text.secondary">
                 When enabled, the AI will analyze the email thread and suggest response categories before drafting.
               </Typography>
+              <Typography variant="caption" color="warning.main" sx={{ display: "block", mt: 0.5 }}>
+                Uses an additional AI request and extra tokens.
+              </Typography>
             </Box>
           }
           labelPlacement="start"

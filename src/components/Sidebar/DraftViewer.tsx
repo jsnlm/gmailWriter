@@ -25,12 +25,15 @@ function DraftCard({ draft, index, onInsert }: DraftCardProps) {
       <CardContent sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1.5 }}>
         <TextField
           multiline
-          rows={7}
+          minRows={7}
           fullWidth
           value={text}
           onChange={(e) => setText(e.target.value)}
           size="small"
-          sx={{ "& .MuiOutlinedInput-root": { fontSize: 13 } }}
+          sx={{
+            "& .MuiOutlinedInput-root": { fontSize: 13 },
+            "& textarea": { resize: "vertical" },
+          }}
         />
         <Button
           variant="contained"

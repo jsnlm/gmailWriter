@@ -125,9 +125,9 @@ export function SettingsPage() {
           >
             <Tab label="LLM Config" value="llm" />
             <Tab label="Writing Instructions" value="writing" />
+            <Tab label="Display" value="display" />
             <Tab label="Personal Info" value="personal" />
             <Tab label="Sample Emails" value="emails" />
-            <Tab label="Display" value="display" />
           </Tabs>
         </AppBar>
 
@@ -145,6 +145,12 @@ export function SettingsPage() {
                 onChange={(promptInstructions) => setSync({ ...sync, promptInstructions })}
               />
             </div>
+            <div id="display" ref={sectionRefs.display}>
+              <DisplaySettingsSection
+                showSuggestedResponses={sync.showSuggestedResponses}
+                onChange={(showSuggestedResponses) => setSync({ ...sync, showSuggestedResponses })}
+              />
+            </div>
             <div id="personal" ref={sectionRefs.personal}>
               <PersonalInfoSection
                 entries={sync.personalInfo}
@@ -155,12 +161,6 @@ export function SettingsPage() {
               <SampleEmailsSection
                 emails={local.sampleEmails}
                 onChange={(sampleEmails) => setLocal({ ...local, sampleEmails })}
-              />
-            </div>
-            <div id="display" ref={sectionRefs.display}>
-              <DisplaySettingsSection
-                showSuggestedResponses={sync.showSuggestedResponses}
-                onChange={(showSuggestedResponses) => setSync({ ...sync, showSuggestedResponses })}
               />
             </div>
           </Container>
