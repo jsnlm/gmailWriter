@@ -4,8 +4,8 @@ import createCache from "@emotion/cache";
 import { CacheProvider } from "@emotion/react";
 import { ThemeProvider } from "@mui/material/styles";
 import { Sidebar } from "../components/Sidebar/Sidebar";
-import { extractThreadData } from "./gmail";
-import { getAllSettings, saveLocalSettings, SIDEBAR_DEFAULT_WIDTH } from "../services/storage";
+import * as gmail from "./gmail";
+import * as storage from "../services/storage";
 import { gmailTheme } from "../theme";
 import type { ThreadData, SyncSettings, LocalSettings } from "../types";
 
@@ -52,7 +52,7 @@ let sidebarHost: HTMLElement | null = null;
 let reactRoot: ReturnType<typeof createRoot> | null = null;
 let isSidebarOpen = false;
 let currentThreadUrl = "";
-let currentWidth = SIDEBAR_DEFAULT_WIDTH;
+let currentWidth = storage.SIDEBAR_DEFAULT_WIDTH;
 
 function renderSidebar(thread: ThreadData, settings: SyncSettings & LocalSettings) {
   reactRoot!.render(
@@ -72,14 +72,14 @@ function renderSidebar(thread: ThreadData, settings: SyncSettings & LocalSetting
 let emotionCache: ReturnType<typeof createCache> | null = null;
 
 async function openSidebar() {
-  const thread = extractThreadData();
+  const thread = gmail.extractThreadData();
   if (!thread) {
     console.warn("[Gmail Drafter] Could not extract thread data. Are you viewing a thread?");
     return;
   }
 
-  const settings = await getAllSettings();
-  currentWidth = settings.sidebarWidth ?? SIDEBAR_DEFAULT_WIDTH;
+  const settings = await storage.getAllSettings();
+  currentWidth = settings.sidebarWidth ?? storage.SIDEBAR_DEFAULT_WIDTH;
 
   if (!sidebarHost) {
     sidebarHost = document.createElement("div");
@@ -116,7 +116,7 @@ async function openSidebar() {
       const onMouseUp = () => {
         document.removeEventListener("mousemove", onMouseMove);
         document.removeEventListener("mouseup", onMouseUp);
-        saveLocalSettings({ sidebarWidth: currentWidth });
+        storage.saveLocalSettings({ sidebarWidth: currentWidth });
       };
 
       document.addEventListener("mousemove", onMouseMove);

@@ -1,4 +1,4 @@
-import { generateCategories, generateDraft } from "../services/llm";
+import * as llm from "../services/llm";
 import type { ThreadData, SyncSettings, LocalSettings } from "../types";
 
 type AllSettings = SyncSettings & LocalSettings;
@@ -34,7 +34,7 @@ chrome.runtime.onMessage.addListener(
         sendResponse({ error: "Missing thread or settings" });
         return true;
       }
-      generateCategories(thread, settings)
+      llm.generateCategories(thread, settings)
         .then((categories) => sendResponse({ categories }))
         .catch((err: Error) => sendResponse({ error: err.message }));
       return true; // keep message channel open for async response
@@ -46,7 +46,7 @@ chrome.runtime.onMessage.addListener(
         sendResponse({ error: "Missing thread or settings" });
         return true;
       }
-      generateDraft(
+      llm.generateDraft(
         thread,
         category ?? "",
         tone ?? "Casual",

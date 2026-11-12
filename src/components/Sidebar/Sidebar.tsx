@@ -10,7 +10,7 @@ import type { ThreadData, SyncSettings, LocalSettings } from "../../types";
 import { CategorySelector } from "./CategorySelector";
 import { ToneSelector } from "./ToneSelector";
 import { DraftViewer } from "./DraftViewer";
-import { insertIntoCompose } from "../../content/compose";
+import * as compose from "../../content/compose";
 
 type View = "loading-categories" | "select-category" | "error";
 
@@ -76,7 +76,7 @@ export function Sidebar({ thread, settings, onClose }: Props) {
   };
 
   const handleInsert = (text: string) => {
-    const success = insertIntoCompose(text);
+    const success = compose.insert(text);
     if (!success) {
       alert("Could not find Gmail's compose area. Please click Reply in the email thread first.");
     }

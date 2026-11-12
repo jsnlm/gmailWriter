@@ -7,7 +7,7 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import type { LLMConfig, LLMProvider } from "../../types";
-import { PROVIDER_LABELS, PROVIDER_MODELS } from "../../services/llmProvider";
+import * as llmProvider from "../../services/llmProvider";
 
 interface Props {
   config: LLMConfig;
@@ -27,10 +27,10 @@ const API_KEY_HINTS: Record<LLMProvider, string> = {
 
 export function LLMConfigSection({ config, onChange }: Props) {
   const [showKey, setShowKey] = useState(false);
-  const models = PROVIDER_MODELS[config.provider] ?? [];
+  const models = llmProvider.PROVIDER_MODELS[config.provider] ?? [];
 
   const handleProviderChange = (provider: LLMProvider) => {
-    onChange({ ...config, provider, model: PROVIDER_MODELS[provider]?.[0] ?? "" });
+    onChange({ ...config, provider, model: llmProvider.PROVIDER_MODELS[provider]?.[0] ?? "" });
   };
 
   return (
@@ -51,8 +51,8 @@ export function LLMConfigSection({ config, onChange }: Props) {
           label="Provider"
           onChange={(e) => handleProviderChange(e.target.value as LLMProvider)}
         >
-          {(Object.keys(PROVIDER_LABELS) as LLMProvider[]).map((key) => (
-            <MenuItem key={key} value={key}>{PROVIDER_LABELS[key]}</MenuItem>
+          {(Object.keys(llmProvider.PROVIDER_LABELS) as LLMProvider[]).map((key) => (
+            <MenuItem key={key} value={key}>{llmProvider.PROVIDER_LABELS[key]}</MenuItem>
           ))}
         </Select>
       </FormControl>

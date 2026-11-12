@@ -1,5 +1,5 @@
 import type { ThreadData, SyncSettings, LocalSettings } from "../types";
-import { callLLMProvider } from "./llmProvider";
+import * as llmProvider from "./llmProvider";
 
 type AllSettings = SyncSettings & LocalSettings;
 
@@ -38,7 +38,7 @@ async function callLLM(settings: AllSettings, system: string, user: string): Pro
 
   console.log("[LLM Request]", { provider, model, system, user });
 
-  const result = await callLLMProvider(provider, apiKey, model, system, user);
+  const result = await llmProvider.call(provider, apiKey, model, system, user);
 
   console.log("[LLM Response]", result);
   return result;

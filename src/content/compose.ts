@@ -2,7 +2,7 @@
  * Inserts text into Gmail's reply compose box.
  * Opens the reply area if it isn't already open.
  */
-export function insertIntoCompose(text: string): boolean {
+export function insert(text: string): boolean {
   // Try to find an already-open compose window body
   let composeBody = findComposeBody();
 

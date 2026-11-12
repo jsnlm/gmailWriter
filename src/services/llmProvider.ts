@@ -121,7 +121,7 @@ async function callGemini(apiKey: string, model: string, system: string, user: s
   return data.candidates[0]?.content?.parts[0]?.text ?? "";
 }
 
-export async function callLLMProvider(
+export async function call(
   provider: LLMProvider,
   apiKey: string,
   model: string,

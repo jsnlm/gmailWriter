@@ -11,7 +11,7 @@ import { PersonalInfoSection } from "./PersonalInfo";
 import { LLMConfigSection } from "./LLMConfig";
 import { PromptInstructionsSection } from "./PromptInstructions";
 import { DisplaySettingsSection } from "./DisplaySettings";
-import { getSyncSettings, saveSyncSettings, getLocalSettings, saveLocalSettings } from "../../services/storage";
+import * as storage from "../../services/storage";
 import { gmailTheme } from "../../theme";
 import type { SyncSettings, LocalSettings } from "../../types";
 
@@ -39,7 +39,7 @@ export function SettingsPage() {
   };
 
   useEffect(() => {
-    Promise.all([getSyncSettings(), getLocalSettings()]).then(([s, l]) => {
+    Promise.all([storage.getSyncSettings(), storage.getLocalSettings()]).then(([s, l]) => {
       setSync(s);
       setLocal(l);
       setSavedSync(s);
@@ -70,8 +70,8 @@ export function SettingsPage() {
     setSaving(true);
     try {
       await Promise.all([
-        saveSyncSettings({ personalInfo: sync.personalInfo, llmConfig: sync.llmConfig, promptInstructions: sync.promptInstructions, showSuggestedResponses: sync.showSuggestedResponses }),
-        saveLocalSettings({ sampleEmails: local.sampleEmails }),
+        storage.saveSyncSettings({ personalInfo: sync.personalInfo, llmConfig: sync.llmConfig, promptInstructions: sync.promptInstructions, showSuggestedResponses: sync.showSuggestedResponses }),
+        storage.saveLocalSettings({ sampleEmails: local.sampleEmails }),
       ]);
       setSavedSync(sync);
       setSavedLocal(local);
