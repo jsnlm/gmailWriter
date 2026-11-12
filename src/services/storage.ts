@@ -12,13 +12,13 @@ const DEFAULT_SYNC: SyncSettings = {
     apiKey: "",
     model: "claude-opus-4-6",
   },
-  promptInstructions: `- Avoid stock AI phrasing: "I hope this email finds you well," "I wanted to reach out," "I hope you're doing well," "circle back," "touch base," "happy to help," "feel free to," and openers like "Here's the thing."
+  promptInstructions: `- Limit the "—" character and three-item parallel lists, both of which signal AI writing.
+- Avoid stock AI phrasing: "I hope this email finds you well," "I wanted to reach out," "I hope you're doing well," "circle back," "touch base," "happy to help," "feel free to," and openers like "Here's the thing."
 - Avoid AI-favored words: delve, leverage, seamless, robust, navigate, elevate, streamline, testament.
 - Don't open with pleasantries or close with "Let me know if you have any questions" unless it fits the context. Start with the point.
 - Vary sentence length. Mix short sentences with longer ones rather than uniform medium-length ones.
 - Use contractions. Allow occasional fragments. Match the formality to the relationship.
-- Don't restate or summarize what you just said. Don't over-explain things the recipient already knows.
-- Limit em-dashes and three-item parallel lists, both of which signal AI writing.`,
+- Don't restate or summarize what you just said. Don't over-explain things the recipient already knows.`,
   showSuggestedResponses: false,
 };
 

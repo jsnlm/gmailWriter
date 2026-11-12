@@ -143,11 +143,17 @@ async function callLLM(settings: AllSettings, system: string, user: string): Pro
 
   const config = PROVIDER_CONFIGS[provider] ?? PROVIDER_CONFIGS.claude;
 
+  console.log("[LLM Request]", { provider, model, system, user });
+
+  let result: string;
   switch (config.format) {
-    case "anthropic": return callAnthropic(apiKey, model, system, user);
-    case "gemini":    return callGemini(apiKey, model, system, user);
-    default:          return callOpenAICompatible(config.baseUrl, apiKey, model, system, user);
+    case "anthropic": result = await callAnthropic(apiKey, model, system, user); break;
+    case "gemini":    result = await callGemini(apiKey, model, system, user); break;
+    default:          result = await callOpenAICompatible(config.baseUrl, apiKey, model, system, user); break;
   }
+
+  console.log("[LLM Response]", result);
+  return result;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
