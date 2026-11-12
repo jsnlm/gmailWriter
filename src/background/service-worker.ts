@@ -1,4 +1,4 @@
-import { generateCategories, generateDraft } from "../services/claude";
+import { generateCategories, generateDraft } from "../services/llm";
 import type { ThreadData, SyncSettings, LocalSettings } from "../types";
 
 type AllSettings = SyncSettings & LocalSettings;

@@ -7,7 +7,7 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import type { LLMConfig, LLMProvider } from "../../types";
-import { PROVIDER_LABELS, PROVIDER_MODELS } from "../../services/claude";
+import { PROVIDER_LABELS, PROVIDER_MODELS } from "../../services/llmProvider";
 
 interface Props {
   config: LLMConfig;
