@@ -10,7 +10,6 @@ import type { ThreadData, Draft, ComposeContext, SyncSettings, LocalSettings } f
 import { CategorySelector } from "./CategorySelector";
 import { ToneSelector } from "./ToneSelector";
 import { DraftViewer } from "./DraftViewer";
-import * as compose from "../../content/compose";
 
 type View = "loading-categories" | "select-category" | "error";
 
@@ -19,13 +18,19 @@ export type SidebarMode =
   | { kind: "reply"; thread: ThreadData }
   | { kind: "compose"; currentUser: { name: string; email: string } };
 
+// The sidebar is plain UI: it never touches Gmail's page. Whoever renders it
+// passes in how to insert a draft and what an open compose window holds.
 interface Props {
   mode: SidebarMode;
   settings: SyncSettings & LocalSettings;
   onClose: () => void;
+  /** Puts the draft into Gmail. Resolves false if there was nowhere to put it. */
+  onInsert: (draft: Draft) => Promise<boolean>;
+  /** Recipients and subject the user already entered in Gmail, for new emails. */
+  getComposeDetails: () => { recipients: { name: string; email: string }[]; subject: string };
 }
 
-export function Sidebar({ mode, settings, onClose }: Props) {
+export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails }: Props) {
   const thread = mode.kind === "reply" ? mode.thread : null;
   const [view, setView] = useState<View>("loading-categories");
   const [recipientNote, setRecipientNote] = useState("");
@@ -79,20 +84,18 @@ export function Sidebar({ mode, settings, onClose }: Props) {
       return;
     }
 
-    // Read the To/Subject of an open new-message window now, in case the
-    // user opened one after the sidebar.
-    const openWindow = compose.readNewEmailWindow();
+    // Ask for the To/Subject now, in case the user filled them in after
+    // opening the sidebar.
     const composeContext: ComposeContext = {
       currentUser: mode.currentUser,
-      recipients: openWindow?.recipients ?? [],
       recipientNote,
-      subject: openWindow?.subject ?? "",
+      ...getComposeDetails(),
     };
     chrome.runtime.sendMessage(
       { type: "GET_NEW_EMAIL", composeContext, tone, customInstructions, settings, previousDrafts },
       (response: { draft?: Draft; error?: string }) => onResponse(response?.draft, response?.error)
     );
-  }, [mode, selectedCategory, customInstructions, recipientNote, tone, settings]);
+  }, [mode, selectedCategory, customInstructions, recipientNote, tone, settings, getComposeDetails]);
 
   const handleSubmit = () => {
     if (!selectedCategory && !customInstructions.trim()) return;
@@ -101,15 +104,10 @@ export function Sidebar({ mode, settings, onClose }: Props) {
   };
 
   const handleInsert = async (draft: Draft) => {
-    if (mode.kind === "reply") {
-      if (!compose.insertReply(draft.body)) {
-        alert("Could not find Gmail's compose area. Please click Reply in the email thread first.");
-      }
-      return;
-    }
-    if (!(await compose.insertNewEmail(draft))) {
-      alert("Could not open a new Gmail message. Please click Gmail's Compose button, then try Insert again.");
-    }
+    if (await onInsert(draft)) return;
+    alert(mode.kind === "reply"
+      ? "Could not find Gmail's compose area. Please click Reply in the email thread first."
+      : "Could not open a new Gmail message. Please click Gmail's Compose button, then try Insert again.");
   };
 
   const canSubmit = !!(selectedCategory || customInstructions.trim());

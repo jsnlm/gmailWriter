@@ -16,6 +16,7 @@ interface Props {
 
 export function CategorySelector({
   categories, selected, customInstructions, onSelect, onCustomInstructions, showSuggestions,
+  heading = "How do you want to respond?",
 }: Props) {
   const [showCustom, setShowCustom] = useState(!showSuggestions);
 

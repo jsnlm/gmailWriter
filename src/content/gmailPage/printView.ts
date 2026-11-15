@@ -1,4 +1,5 @@
-import type { EmailMessage } from "../types";
+import type { EmailMessage } from "../../types";
+import { SELECTORS } from "./selectors";
 
 // ── Gmail print view ──────────────────────────────────────────────────────────
 // Gmail can render a whole thread as one plain HTML page: the page that
@@ -19,7 +20,7 @@ const FETCH_TIMEOUT_MS = 5000;
 function getLegacyThreadId(): string | null {
   return (
     document
-      .querySelector('[role="main"] [data-legacy-message-id]')
+      .querySelector(SELECTORS.legacyMessageId)
       ?.getAttribute("data-legacy-message-id") ?? null
   );
 }
@@ -87,7 +88,7 @@ function parseMessage(el: Element, index: number): EmailMessage | null {
   const from = parseSender(cells[0]?.textContent ?? "");
   const timestamp = cells.length > 1 ? cells[cells.length - 1].textContent?.trim() ?? "" : "";
 
-  const recipientEl = el.querySelector(".recipient");
+  const recipientEl = el.querySelector(SELECTORS.printRecipient);
   const to = recipientEl
     ? toText(recipientEl)
         .split("\n")
@@ -96,7 +97,7 @@ function parseMessage(el: Element, index: number): EmailMessage | null {
     : [];
 
   // Body: everything after the header, minus the recipients block
-  const bodyRows = rows.slice(1).filter((row) => !row.querySelector(".recipient"));
+  const bodyRows = rows.slice(1).filter((row) => !row.querySelector(SELECTORS.printRecipient));
   const body = cleanText(bodyRows.map((row) => toText(row)).join("\n"));
 
   if (!body && !from.email) return null;
@@ -123,7 +124,7 @@ export async function readMessages(): Promise<EmailMessage[] | null> {
     }
 
     const doc = new DOMParser().parseFromString(await res.text(), "text/html");
-    const messages = Array.from(doc.querySelectorAll(".message"))
+    const messages = Array.from(doc.querySelectorAll(SELECTORS.printMessage))
       .map((el, i) => parseMessage(el, i))
       .filter((m): m is EmailMessage => m !== null);
 
