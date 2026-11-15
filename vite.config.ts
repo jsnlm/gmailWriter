@@ -10,6 +10,14 @@ export default defineConfig({
     react(),
     crx({ manifest }),
   ],
+  // Dev server for `npm run dev`. The extension loads its code from here and
+  // reloads itself when files change. Chrome extension pages need CORS access.
+  server: {
+    port: 5173,
+    strictPort: true,
+    hmr: { port: 5173 },
+    cors: { origin: [/chrome-extension:\/\//] },
+  },
   build: {
     outDir: "dist",
     sourcemap: true,

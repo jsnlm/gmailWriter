@@ -18,6 +18,21 @@ function formatThread(thread: ThreadData): string {
   return lines.join("\n");
 }
 
+/** e.g. "Thursday, November 12, 2026 at 6:35 PM PST (America/Los_Angeles)" */
+function formatCurrentDateTime(now = new Date()): string {
+  const formatted = now.toLocaleString("en-US", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+    hour: "numeric", minute: "2-digit", timeZoneName: "short",
+  });
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return `${formatted} (${timeZone})`;
+}
+
+/** Lets the model reason about how long ago messages were and what "Friday" means. */
+function formatDateContext(): string {
+  return `Current date and time: ${formatCurrentDateTime()}. Use this to interpret dates and relative times in the thread (e.g. "tomorrow", "next week") and to get any dates in your response right.`;
+}
+
 function formatPersonalInfo(settings: AllSettings): string {
   return settings.personalInfo
     .filter((e) => e.key && e.value)
@@ -36,7 +51,9 @@ async function callLLM(settings: AllSettings, system: string, user: string): Pro
   const { provider, apiKey, model } = settings.llmConfig;
   if (!apiKey) throw new Error("No API key configured. Please add your API key in Settings.");
 
-  console.log("[LLM Request]", { provider, model, system, user });
+  console.log("[LLM Request a]", { provider, model, system, user });
+  console.dir("[LLM Request b]", { provider, model, system, user });
+  console.table({ provider, model, system, user });
 
   const result = await llmProvider.call(provider, apiKey, model, system, user);
 
@@ -48,7 +65,7 @@ async function callLLM(settings: AllSettings, system: string, user: string): Pro
 
 export async function generateCategories(thread: ThreadData, settings: AllSettings): Promise<string[]> {
   const system = `You help users draft Gmail replies. Analyze the email thread and suggest specific, action-oriented response options tailored to the exact content.`;
-  const user = `Here is the email thread:\n\n${formatThread(thread)}\n\nSuggest 3-5 specific, action-oriented response options for the most recent email. Make them specific to this thread's content, not generic.\n\nReturn ONLY a JSON array of strings. No other text.\nExample: ["Accept the proposal", "Request more details", "Decline politely"]`;
+  const user = `${formatDateContext()}\n\nHere is the email thread:\n\n${formatThread(thread)}\n\nSuggest 3-5 specific, action-oriented response options for the most recent email. Make them specific to this thread's content, not generic.\n\nReturn ONLY a JSON array of strings. No other text.\nExample: ["Accept the proposal", "Request more details", "Decline politely"]`;
 
   const raw = await callLLM(settings, system, user);
   try {
@@ -93,7 +110,7 @@ Rules:
     ? `\nThe following drafts have already been generated. Write something distinctly different — vary the phrasing, structure, opening, and overall approach while still fulfilling the same intent:\n\n${previousDrafts.map((d, i) => `[Draft ${i + 1}]\n${d}`).join("\n\n")}\n`
     : "";
 
-  const user = `Here is the email thread:\n\n${formatThread(thread)}\n\n${intentLine}\nTone: ${tone}\n${previousDraftsSection}\nWrite the email reply body now.`;
+  const user = `${formatDateContext()}\n\nHere is the email thread:\n\n${formatThread(thread)}\n\n${intentLine}\nTone: ${tone}\n${previousDraftsSection}\nWrite the email reply body now.`;
 
   return callLLM(settings, system, user);
 }

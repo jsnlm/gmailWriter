@@ -72,7 +72,7 @@ function renderSidebar(thread: ThreadData, settings: SyncSettings & LocalSetting
 let emotionCache: ReturnType<typeof createCache> | null = null;
 
 async function openSidebar() {
-  const thread = gmail.extractThreadData();
+  const thread = await gmail.readThread();
   if (!thread) {
     console.warn("[Gmail Drafter] Could not extract thread data. Are you viewing a thread?");
     return;

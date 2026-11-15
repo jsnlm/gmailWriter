@@ -1,4 +1,5 @@
 import type { EmailMessage, ThreadData } from "../types";
+import * as printView from "./printView";
 
 function parseEmailAddress(raw: string): { name: string; email: string } {
   const match = raw.match(/^(.+?)\s*<(.+?)>$/);
@@ -67,21 +68,62 @@ function parseMessageContainer(container: Element, index: number): EmailMessage 
   };
 }
 
-export function extractThreadData(): ThreadData | null {
+// ── Collapsed messages ────────────────────────────────────────────────────────
+// Gmail only renders a message's body (and its `data-message-id` container)
+// once the message is expanded. Collapsed messages are bare list items with
+// just the sender. readThread() gets their text from the print view instead;
+// this DOM reading is the fallback.
+
+function getThreadItems(): HTMLElement[] {
+  return Array.from(document.querySelectorAll<HTMLElement>('[role="main"] [role="listitem"]'));
+}
+
+function isLoaded(item: HTMLElement): boolean {
+  return item.querySelector("[data-message-id] .a3s") !== null;
+}
+
+/** Fallback for a collapsed message: keep at least the sender. */
+function parseCollapsedItem(item: HTMLElement, index: number): EmailMessage | null {
+  const senderEl = item.querySelector<HTMLElement>("[email]");
+  if (!senderEl) return null;
+  const email = senderEl.getAttribute("email") ?? "";
+  return {
+    id: `msg-${index}`,
+    from: { name: senderEl.getAttribute("name") ?? email, email },
+    to: [],
+    timestamp: "",
+    body: "[This message is collapsed, so its text couldn't be read]",
+  };
+}
+
+/**
+ * Reads the open thread. Uses Gmail's print view, which includes collapsed
+ * messages, and falls back to the on-screen DOM if that fails.
+ */
+export async function readThread(): Promise<ThreadData | null> {
+  const fromPage = extractThreadData();
+  if (!fromPage) return null;
+
+  const messages = await printView.readMessages();
+  if (messages) return { ...fromPage, messages };
+  return fromPage;
+}
+
+function extractThreadData(): ThreadData | null {
   // Subject
   const subjectEl = document.querySelector<HTMLElement>(".hP");
   const subject = subjectEl?.textContent?.trim() ?? "(No subject)";
 
-  // All email message containers
-  const containers = document.querySelectorAll<HTMLElement>("[data-message-id]");
-  if (containers.length === 0) return null;
+  // Every message in the thread, in order, whether or not it's expanded
+  const items = getThreadItems();
+  if (items.length === 0) return null;
 
   const messages: EmailMessage[] = [];
-  containers.forEach((container, i) => {
-    // Skip collapsed messages (only the header is visible)
-    const isCollapsed = container.querySelector(".a3s") === null;
-    if (isCollapsed) return;
-    const msg = parseMessageContainer(container, i);
+  items.forEach((item, i) => {
+    const container = item.querySelector<HTMLElement>("[data-message-id]");
+    const msg = container && isLoaded(item)
+      ? parseMessageContainer(container, i)
+      : parseCollapsedItem(item, i);
     if (msg) messages.push(msg);
   });
 
