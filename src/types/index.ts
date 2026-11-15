@@ -12,6 +12,23 @@ export interface ThreadData {
   currentUser: { name: string; email: string };
 }
 
+/** What we know about a new email the user is writing from scratch. */
+export interface ComposeContext {
+  currentUser: { name: string; email: string };
+  /** Addresses already in an open new-message window's To/Cc fields. */
+  recipients: { name: string; email: string }[];
+  /** Free text from the sidebar's "Who's it for?" field. */
+  recipientNote: string;
+  /** Subject already typed in an open new-message window, if any. */
+  subject: string;
+}
+
+/** A generated draft. `subject` is only set for new emails. */
+export interface Draft {
+  subject?: string;
+  body: string;
+}
+
 export interface PersonalInfoEntry {
   key: string;
   value: string;

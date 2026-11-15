@@ -5,15 +5,17 @@ import {
 } from "@mui/material";
 import ReplayIcon from "@mui/icons-material/Replay";
 import SendIcon from "@mui/icons-material/Send";
+import type { Draft } from "../../types";
 
 interface DraftCardProps {
-  draft: string;
+  draft: Draft;
   index: number;
-  onInsert: (text: string) => void;
+  onInsert: (draft: Draft) => void;
 }
 
 function DraftCard({ draft, index, onInsert }: DraftCardProps) {
-  const [text, setText] = useState(draft);
+  const [subject, setSubject] = useState(draft.subject);
+  const [text, setText] = useState(draft.body);
 
   return (
     <Card>
@@ -23,6 +25,16 @@ function DraftCard({ draft, index, onInsert }: DraftCardProps) {
         </Typography>
       </Box>
       <CardContent sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1.5 }}>
+        {subject !== undefined && (
+          <TextField
+            label="Subject"
+            fullWidth
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            size="small"
+            sx={{ "& .MuiOutlinedInput-root": { fontSize: 13 } }}
+          />
+        )}
         <TextField
           multiline
           minRows={7}
@@ -39,7 +51,7 @@ function DraftCard({ draft, index, onInsert }: DraftCardProps) {
           variant="contained"
           fullWidth
           startIcon={<SendIcon />}
-          onClick={() => onInsert(text)}
+          onClick={() => onInsert({ subject, body: text })}
         >
           Insert into Gmail
         </Button>
@@ -49,10 +61,10 @@ function DraftCard({ draft, index, onInsert }: DraftCardProps) {
 }
 
 interface Props {
-  drafts: string[];
+  drafts: Draft[];
   isGenerating: boolean;
   onGenerateAnother: () => void;
-  onInsert: (text: string) => void;
+  onInsert: (draft: Draft) => void;
 }
 
 export function DraftViewer({ drafts, isGenerating, onGenerateAnother, onInsert }: Props) {

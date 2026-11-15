@@ -7,7 +7,7 @@ function parseEmailAddress(raw: string): { name: string; email: string } {
   return { name: raw, email: raw };
 }
 
-function getLoggedInUser(): { name: string; email: string } {
+export function getLoggedInUser(): { name: string; email: string } {
   // Try Google Account button aria-label: "Google Account: Name (email@gmail.com)"
   const accountBtn = document.querySelector<HTMLElement>(
     'a[aria-label*="Google Account"]'
@@ -134,12 +134,8 @@ function extractThreadData(): ThreadData | null {
   return { subject, messages, currentUser };
 }
 
-export function isOnGmailThread(): boolean {
-  return (
-    window.location.hash.includes("#inbox/") ||
-    window.location.hash.includes("#sent/") ||
-    window.location.hash.includes("#all/") ||
-    window.location.hash.includes("#search/") ||
-    document.querySelector("[data-message-id]") !== null
-  );
+/** True when a thread is open (its subject heading is on screen). */
+export function isViewingThread(): boolean {
+  const subject = document.querySelector<HTMLElement>("[role='main'] .hP");
+  return subject !== null && subject.getClientRects().length > 0;
 }

@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Box, Typography, IconButton, CircularProgress,
-  Alert, Button, Divider, Tooltip,
+  Alert, Button, Divider, Tooltip, TextField,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import CloseIcon from "@mui/icons-material/Close";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import type { ThreadData, SyncSettings, LocalSettings } from "../../types";
+import type { ThreadData, Draft, ComposeContext, SyncSettings, LocalSettings } from "../../types";
 import { CategorySelector } from "./CategorySelector";
 import { ToneSelector } from "./ToneSelector";
 import { DraftViewer } from "./DraftViewer";
@@ -14,24 +14,32 @@ import * as compose from "../../content/compose";
 
 type View = "loading-categories" | "select-category" | "error";
 
+/** Replying to the open thread, or writing a new email from scratch. */
+export type SidebarMode =
+  | { kind: "reply"; thread: ThreadData }
+  | { kind: "compose"; currentUser: { name: string; email: string } };
+
 interface Props {
-  thread: ThreadData;
+  mode: SidebarMode;
   settings: SyncSettings & LocalSettings;
   onClose: () => void;
 }
 
-export function Sidebar({ thread, settings, onClose }: Props) {
+export function Sidebar({ mode, settings, onClose }: Props) {
+  const thread = mode.kind === "reply" ? mode.thread : null;
   const [view, setView] = useState<View>("loading-categories");
+  const [recipientNote, setRecipientNote] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [customInstructions, setCustomInstructions] = useState("");
   const [tone, setTone] = useState("Casual");
-  const [drafts, setDrafts] = useState<string[]>([]);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!settings.showSuggestedResponses) {
+    // Suggested responses need a thread to respond to
+    if (!thread || !settings.showSuggestedResponses) {
       setView("select-category");
       return;
     }
@@ -50,24 +58,41 @@ export function Sidebar({ thread, settings, onClose }: Props) {
   }, []);
 
   const requestDraft = useCallback((previousDrafts: string[] = []) => {
-    const category = selectedCategory ?? "";
-    const instructions = customInstructions;
-
     setIsGeneratingDraft(true);
 
-    chrome.runtime.sendMessage(
-      { type: "GET_DRAFT", thread, category, tone, customInstructions: instructions, settings, previousDrafts },
-      (response: { draft?: string; error?: string }) => {
-        setIsGeneratingDraft(false);
-        if (chrome.runtime.lastError || response?.error) {
-          setError(response?.error ?? chrome.runtime.lastError?.message ?? "Failed to generate draft");
-          setView("error");
-        } else if (response.draft) {
-          setDrafts((prev) => [...prev, response.draft!]);
-        }
+    const onResponse = (draft: Draft | undefined, err: string | undefined) => {
+      setIsGeneratingDraft(false);
+      if (chrome.runtime.lastError || err) {
+        setError(err ?? chrome.runtime.lastError?.message ?? "Failed to generate draft");
+        setView("error");
+      } else if (draft) {
+        setDrafts((prev) => [...prev, draft]);
       }
+    };
+
+    if (mode.kind === "reply") {
+      chrome.runtime.sendMessage(
+        { type: "GET_DRAFT", thread: mode.thread, category: selectedCategory ?? "", tone, customInstructions, settings, previousDrafts },
+        (response: { draft?: string; error?: string }) =>
+          onResponse(response?.draft ? { body: response.draft } : undefined, response?.error)
+      );
+      return;
+    }
+
+    // Read the To/Subject of an open new-message window now, in case the
+    // user opened one after the sidebar.
+    const openWindow = compose.readNewEmailWindow();
+    const composeContext: ComposeContext = {
+      currentUser: mode.currentUser,
+      recipients: openWindow?.recipients ?? [],
+      recipientNote,
+      subject: openWindow?.subject ?? "",
+    };
+    chrome.runtime.sendMessage(
+      { type: "GET_NEW_EMAIL", composeContext, tone, customInstructions, settings, previousDrafts },
+      (response: { draft?: Draft; error?: string }) => onResponse(response?.draft, response?.error)
     );
-  }, [selectedCategory, customInstructions, tone, thread, settings]);
+  }, [mode, selectedCategory, customInstructions, recipientNote, tone, settings]);
 
   const handleSubmit = () => {
     if (!selectedCategory && !customInstructions.trim()) return;
@@ -75,10 +100,15 @@ export function Sidebar({ thread, settings, onClose }: Props) {
     requestDraft([]);
   };
 
-  const handleInsert = (text: string) => {
-    const success = compose.insert(text);
-    if (!success) {
-      alert("Could not find Gmail's compose area. Please click Reply in the email thread first.");
+  const handleInsert = async (draft: Draft) => {
+    if (mode.kind === "reply") {
+      if (!compose.insertReply(draft.body)) {
+        alert("Could not find Gmail's compose area. Please click Reply in the email thread first.");
+      }
+      return;
+    }
+    if (!(await compose.insertNewEmail(draft))) {
+      alert("Could not open a new Gmail message. Please click Gmail's Compose button, then try Insert again.");
     }
   };
 
@@ -129,10 +159,10 @@ export function Sidebar({ thread, settings, onClose }: Props) {
           variant="caption"
           color="text.secondary"
           noWrap
-          title={thread.subject}
+          title={thread?.subject ?? "New email"}
           sx={{ display: "block", fontWeight: 500 }}
         >
-          {thread.subject}
+          {thread?.subject ?? "New email"}
         </Typography>
       </Box>
 
@@ -159,13 +189,24 @@ export function Sidebar({ thread, settings, onClose }: Props) {
 
         {view === "select-category" && (
           <>
+            {mode.kind === "compose" && (
+              <TextField
+                label="Who's it for? (optional)"
+                placeholder="e.g. Sam, my landlord"
+                fullWidth
+                size="small"
+                value={recipientNote}
+                onChange={(e) => setRecipientNote(e.target.value)}
+              />
+            )}
             <CategorySelector
               categories={categories}
               selected={selectedCategory}
               customInstructions={customInstructions}
               onSelect={setSelectedCategory}
               onCustomInstructions={setCustomInstructions}
-              showSuggestions={settings.showSuggestedResponses}
+              showSuggestions={mode.kind === "reply" && settings.showSuggestedResponses}
+              heading={mode.kind === "compose" ? "What do you want to write?" : undefined}
             />
             <Divider />
             <ToneSelector tone={tone} onChange={setTone} />
@@ -185,7 +226,7 @@ export function Sidebar({ thread, settings, onClose }: Props) {
                 <DraftViewer
                   drafts={drafts}
                   isGenerating={isGeneratingDraft}
-                  onGenerateAnother={() => requestDraft(drafts)}
+                  onGenerateAnother={() => requestDraft(drafts.map((d) => d.body))}
                   onInsert={handleInsert}
                 />
               </>

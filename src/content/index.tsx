@@ -3,14 +3,16 @@ import { createRoot } from "react-dom/client";
 import createCache from "@emotion/cache";
 import { CacheProvider } from "@emotion/react";
 import { ThemeProvider } from "@mui/material/styles";
-import { Sidebar } from "../components/Sidebar/Sidebar";
+import { Sidebar, type SidebarMode } from "../components/Sidebar/Sidebar";
 import * as gmail from "./gmail";
+import * as compose from "./compose";
 import * as storage from "../services/storage";
 import { gmailTheme } from "../theme";
-import type { ThreadData, SyncSettings, LocalSettings } from "../types";
+import type { SyncSettings, LocalSettings } from "../types";
 
 const SIDEBAR_ID = "gmail-drafter-root";
 const INJECT_BTN_CLASS = "gmail-drafter-btn";
+const COMPOSE_BTN_CLASS = "gmail-drafter-compose-btn";
 const SIDEBAR_MIN_WIDTH = 280;
 const SIDEBAR_MAX_WIDTH = 700;
 
@@ -51,16 +53,18 @@ const HOST_STYLES = `
 let sidebarHost: HTMLElement | null = null;
 let reactRoot: ReturnType<typeof createRoot> | null = null;
 let isSidebarOpen = false;
+let currentModeKind: SidebarMode["kind"] | null = null;
 let currentThreadUrl = "";
 let currentWidth = storage.SIDEBAR_DEFAULT_WIDTH;
 
-function renderSidebar(thread: ThreadData, settings: SyncSettings & LocalSettings) {
+function renderSidebar(mode: SidebarMode, settings: SyncSettings & LocalSettings) {
   reactRoot!.render(
     <CacheProvider value={emotionCache!}>
       <ThemeProvider theme={gmailTheme}>
         <SidebarWrapper
-          key={window.location.href}
-          thread={thread}
+          // A new key resets the sidebar: per thread for replies, once for compose
+          key={mode.kind === "reply" ? window.location.href : "compose"}
+          mode={mode}
           settings={settings}
           onClose={closeSidebar}
         />
@@ -71,11 +75,17 @@ function renderSidebar(thread: ThreadData, settings: SyncSettings & LocalSetting
 
 let emotionCache: ReturnType<typeof createCache> | null = null;
 
-async function openSidebar() {
-  const thread = await gmail.readThread();
-  if (!thread) {
-    console.warn("[Gmail Drafter] Could not extract thread data. Are you viewing a thread?");
-    return;
+async function openSidebar(kind: SidebarMode["kind"]) {
+  let mode: SidebarMode;
+  if (kind === "reply") {
+    const thread = await gmail.readThread();
+    if (!thread) {
+      console.warn("[Gmail Drafter] Could not extract thread data. Are you viewing a thread?");
+      return;
+    }
+    mode = { kind: "reply", thread };
+  } else {
+    mode = { kind: "compose", currentUser: gmail.getLoggedInUser() };
   }
 
   const settings = await storage.getAllSettings();
@@ -111,6 +121,7 @@ async function openSidebar() {
           document.querySelector<HTMLElement>(".bkK") ??
           document.querySelector<HTMLElement>("[role='main']");
         if (mainContent) mainContent.style.marginRight = `${newWidth}px`;
+        shiftComposeWindows(newWidth);
       };
 
       const onMouseUp = () => {
@@ -135,24 +146,48 @@ async function openSidebar() {
   sidebarHost.style.width = `${currentWidth}px`;
 
   currentThreadUrl = window.location.href;
-  renderSidebar(thread, settings);
+  renderSidebar(mode, settings);
   sidebarHost.style.display = "block";
   isSidebarOpen = true;
+  currentModeKind = kind;
   pushGmailContent(true);
 }
 
 function closeSidebar() {
   if (sidebarHost) sidebarHost.style.display = "none";
   isSidebarOpen = false;
+  currentModeKind = null;
   currentThreadUrl = "";
   pushGmailContent(false);
 }
 
-function toggleSidebar() {
-  if (isSidebarOpen) { closeSidebar(); } else { openSidebar(); }
+/**
+ * Opens or closes the sidebar. With no `kind` (the Alt+R shortcut), it drafts
+ * a reply when a thread is open and a new email otherwise.
+ */
+function toggleSidebar(kind?: SidebarMode["kind"]) {
+  if (isSidebarOpen && (!kind || kind === currentModeKind)) { closeSidebar(); return; }
+  openSidebar(kind ?? (gmail.isViewingThread() ? "reply" : "compose"));
+}
+
+// Gmail's new-message windows live in a dock (`.dw`) pinned to the right edge
+// of the screen, under our sidebar. Padding the dock moves them left of it.
+const DOCK_STYLE_ID = "gmail-drafter-dock-style";
+
+function shiftComposeWindows(width: number) {
+  let style = document.getElementById(DOCK_STYLE_ID);
+  if (!style) {
+    style = document.createElement("style");
+    style.id = DOCK_STYLE_ID;
+    document.head.appendChild(style);
+  }
+  style.textContent = width > 0
+    ? `.dw { padding-right: ${width}px !important; box-sizing: border-box !important; }`
+    : "";
 }
 
 function pushGmailContent(open: boolean) {
+  shiftComposeWindows(open ? currentWidth : 0);
   const mainContent =
     document.querySelector<HTMLElement>(".bkK") ??
     document.querySelector<HTMLElement>("[role='main']");
@@ -165,13 +200,13 @@ function pushGmailContent(open: boolean) {
 // ── Wrapper ───────────────────────────────────────────────────────────────────
 
 interface WrapperProps {
-  thread: ThreadData;
+  mode: SidebarMode;
   settings: SyncSettings & LocalSettings;
   onClose: () => void;
 }
 
-function SidebarWrapper({ thread, settings, onClose }: WrapperProps) {
-  return <Sidebar thread={thread} settings={settings} onClose={onClose} />;
+function SidebarWrapper({ mode, settings, onClose }: WrapperProps) {
+  return <Sidebar mode={mode} settings={settings} onClose={onClose} />;
 }
 
 // ── URL change detection ──────────────────────────────────────────────────────
@@ -179,7 +214,8 @@ function SidebarWrapper({ thread, settings, onClose }: WrapperProps) {
 function onUrlChange() {
   const newUrl = window.location.href;
   if (newUrl === currentThreadUrl) return;
-  if (isSidebarOpen) openSidebar();
+  // Follow the user to the next thread; a new email isn't tied to a page
+  if (isSidebarOpen && currentModeKind === "reply" && gmail.isViewingThread()) openSidebar("reply");
 }
 
 window.addEventListener("hashchange", onUrlChange);
@@ -195,20 +231,21 @@ chrome.runtime.onMessage.addListener((message: { type: string }) => {
   if (message.type === "TOGGLE_SIDEBAR") toggleSidebar();
 });
 
-// ── Inject Material Design "Draft with AI" button ─────────────────────────────
-// Styled to match Gmail's own Material Design buttons (filled, pill-shaped).
+// ── Inject Material Design buttons ────────────────────────────────────────────
+// "Draft with AI" next to each Reply button, "AI Compose" next to Gmail's
+// Compose button. Styled to match Gmail's own buttons (filled, pill-shaped).
 
-function createDraftButton(): HTMLElement {
+function createAiButton(className: string, label: string, title: string, onClick: () => void): HTMLElement {
   const btn = document.createElement("button");
-  btn.className = INJECT_BTN_CLASS;
-  btn.title = "Draft with AI (Alt+R)";
+  btn.className = className;
+  btn.title = title;
 
   // Icon + label
   btn.innerHTML = `
     <svg style="width:16px;height:16px;fill:currentColor;flex-shrink:0" viewBox="0 0 24 24">
       <path d="M12 2L13.09 8.26L19 6L14.74 10.91L21 12L14.74 13.09L19 19L13.09 14.74L12 21L10.91 14.74L5 19L9.26 13.09L3 12L9.26 10.91L5 6L10.91 8.26Z"/>
     </svg>
-    <span>Draft with AI</span>
+    <span>${label}</span>
   `;
 
   // Material Design filled button style matching Gmail's palette
@@ -246,9 +283,38 @@ function createDraftButton(): HTMLElement {
   });
   btn.addEventListener("mousedown", () => { btn.style.background = "#1246a0"; });
   btn.addEventListener("mouseup", () => { btn.style.background = "#1557b0"; });
-  btn.addEventListener("click", (e) => { e.stopPropagation(); toggleSidebar(); });
+  btn.addEventListener("click", (e) => { e.stopPropagation(); onClick(); });
 
   return btn;
+}
+
+function createDraftButton(): HTMLElement {
+  return createAiButton(INJECT_BTN_CLASS, "Draft with AI", "Draft a reply with AI (Alt+R)", () => toggleSidebar("reply"));
+}
+
+function createComposeButton(): HTMLElement {
+  const btn = createAiButton(COMPOSE_BTN_CLASS, "AI Compose", "Write a new email with AI (Alt+R)", () => toggleSidebar("compose"));
+  // Its own row under Compose in the left menu
+  btn.style.height = "40px";
+  btn.style.borderRadius = "20px";
+  btn.style.margin = "0 0 8px 12px";
+  btn.style.whiteSpace = "nowrap";
+  return btn;
+}
+
+/**
+ * Lines our button up under Compose. When the left menu is collapsed, Compose
+ * shrinks to an icon, so ours drops its label too.
+ */
+function fitComposeButton(composeBtn: HTMLElement, btn: HTMLElement) {
+  const collapsed = composeBtn.getBoundingClientRect().width < 100;
+  const label = btn.querySelector("span");
+  const display = collapsed ? "none" : "";
+  if (label && label.style.display !== display) label.style.display = display;
+
+  const parentLeft = btn.parentElement?.getBoundingClientRect().left ?? 0;
+  const marginLeft = `${Math.max(0, Math.round(composeBtn.getBoundingClientRect().left - parentLeft))}px`;
+  if (btn.style.marginLeft !== marginLeft) btn.style.marginLeft = marginLeft;
 }
 
 function injectDraftButton() {
@@ -261,5 +327,18 @@ function injectDraftButton() {
   });
 }
 
-const observer = new MutationObserver(() => { injectDraftButton(); });
+function injectComposeButton() {
+  const composeBtn = compose.findComposeButton();
+  if (!composeBtn) return;
+  // Compose sits in its own row (`.z0`); our button goes on the next line
+  const row = composeBtn.closest<HTMLElement>(".z0") ?? composeBtn;
+  let btn = row.nextElementSibling as HTMLElement | null;
+  if (!btn?.classList.contains(COMPOSE_BTN_CLASS)) {
+    btn = createComposeButton();
+    row.insertAdjacentElement("afterend", btn);
+  }
+  fitComposeButton(composeBtn, btn);
+}
+
+const observer = new MutationObserver(() => { injectDraftButton(); injectComposeButton(); });
 observer.observe(document.body, { childList: true, subtree: true });

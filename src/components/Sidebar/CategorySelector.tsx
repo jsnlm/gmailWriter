@@ -11,6 +11,7 @@ interface Props {
   onSelect: (category: string) => void;
   onCustomInstructions: (text: string) => void;
   showSuggestions: boolean;
+  heading?: string;
 }
 
 export function CategorySelector({
@@ -21,7 +22,7 @@ export function CategorySelector({
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
       <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
-        How do you want to respond?
+        {heading}
       </Typography>
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>

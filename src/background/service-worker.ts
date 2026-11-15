@@ -1,5 +1,5 @@
 import * as llm from "../services/llm";
-import type { ThreadData, SyncSettings, LocalSettings } from "../types";
+import type { ThreadData, ComposeContext, SyncSettings, LocalSettings } from "../types";
 
 type AllSettings = SyncSettings & LocalSettings;
 
@@ -19,6 +19,7 @@ chrome.runtime.onMessage.addListener(
     message: {
       type: string;
       thread?: ThreadData;
+      composeContext?: ComposeContext;
       settings?: AllSettings;
       category?: string;
       tone?: string;
@@ -51,6 +52,24 @@ chrome.runtime.onMessage.addListener(
         category ?? "",
         tone ?? "Casual",
         customInstructions ?? "",
+        settings,
+        previousDrafts ?? []
+      )
+        .then((draft) => sendResponse({ draft }))
+        .catch((err: Error) => sendResponse({ error: err.message }));
+      return true;
+    }
+
+    if (message.type === "GET_NEW_EMAIL") {
+      const { composeContext, settings, tone, customInstructions, previousDrafts } = message;
+      if (!composeContext || !settings) {
+        sendResponse({ error: "Missing compose context or settings" });
+        return true;
+      }
+      llm.generateNewEmail(
+        composeContext,
+        customInstructions ?? "",
+        tone ?? "Casual",
         settings,
         previousDrafts ?? []
       )
