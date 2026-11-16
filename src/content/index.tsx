@@ -3,6 +3,7 @@ import { Sidebar, type SidebarMode, type SavedPrompt } from "../components/Sideb
 import { gmailPage } from "./gmailPage/gmailPage";
 import { SidebarHost } from "./SidebarHost";
 import * as storage from "../services/storage";
+import { DEFAULT_TONE } from "../services/tone";
 import type { Draft } from "../types";
 
 // Content script entry point: wires Gmail's page (gmailPage), our sidebar
@@ -25,9 +26,9 @@ let threadIdOnScreen: string | null = null;
 // newer one (or by closing) gives up instead of showing stale content.
 let openGeneration = 0;
 
-// What the user typed, kept across closing, navigating and switching between
-// reply and compose. Lives for the life of the tab.
-let savedPrompt: SavedPrompt = { instructions: "", recipientNote: "" };
+// What the user typed and chose, kept across closing, navigating and switching
+// between reply and compose. Lives for the life of the tab.
+let savedPrompt: SavedPrompt = { instructions: "", recipientNote: "", tone: DEFAULT_TONE };
 
 /**
  * Opens the sidebar in `kind` mode. With `afterThreadChange`, first waits for

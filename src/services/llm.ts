@@ -1,5 +1,6 @@
 import type { ThreadData, ComposeContext, Draft, SyncSettings, LocalSettings } from "../types";
 import * as llmProvider from "./llmProvider";
+import { describeTone, type Tone } from "./tone";
 
 type AllSettings = SyncSettings & LocalSettings;
 
@@ -80,7 +81,7 @@ export async function generateCategories(thread: ThreadData, settings: AllSettin
 }
 
 /** System prompt shared by replies and new emails; `outputRule` says what to return. */
-function buildWriterSystem(userName: string, tone: string, settings: AllSettings, outputRule: string): string {
+function buildWriterSystem(userName: string, tone: Tone, settings: AllSettings, outputRule: string): string {
   const personalInfo = formatPersonalInfo(settings);
   const sampleEmails = formatSampleEmails(settings);
   const customRules = settings.promptInstructions?.trim()
@@ -92,7 +93,7 @@ function buildWriterSystem(userName: string, tone: string, settings: AllSettings
 ${personalInfo ? `Information about the sender:\n${personalInfo}\n` : ""}${sampleEmails ? `\nWriting style examples (match this style and voice):\n${sampleEmails}\n` : ""}
 Rules:
 - ${outputRule}
-- Match the ${tone.toLowerCase()} tone requested.
+- Write in this tone: ${describeTone(tone)}.
 - Keep it natural and human-sounding.
 - Sign off appropriately based on the tone.${customRules}`;
 }
@@ -106,7 +107,7 @@ function formatPreviousDrafts(previousDrafts: string[]): string {
 export async function generateDraft(
   thread: ThreadData,
   category: string,
-  tone: string,
+  tone: Tone,
   customInstructions: string,
   settings: AllSettings,
   previousDrafts: string[] = []
@@ -122,7 +123,7 @@ export async function generateDraft(
     ? `Custom instructions: ${customInstructions}`
     : `Response intent: ${category}`;
 
-  const user = `${formatDateContext()}\n\nHere is the email thread:\n\n${formatThread(thread)}\n\n${intentLine}\nTone: ${tone}\n${formatPreviousDrafts(previousDrafts)}\nWrite the email reply body now.`;
+  const user = `${formatDateContext()}\n\nHere is the email thread:\n\n${formatThread(thread)}\n\n${intentLine}\nTone: ${describeTone(tone)}\n${formatPreviousDrafts(previousDrafts)}\nWrite the email reply body now.`;
 
   return callLLM(settings, system, user);
 }
@@ -137,7 +138,7 @@ function parseSubjectAndBody(raw: string): Draft {
 export async function generateNewEmail(
   context: ComposeContext,
   instructions: string,
-  tone: string,
+  tone: Tone,
   settings: AllSettings,
   previousDrafts: string[] = []
 ): Promise<Draft> {
@@ -156,7 +157,7 @@ export async function generateNewEmail(
     context.subject.trim() ? `The user already chose this subject; reuse it: ${context.subject.trim()}` : "",
   ].filter(Boolean).join("\n");
 
-  const user = `${formatDateContext()}\n\nWrite a new email (not a reply).\n${recipientLines ? `${recipientLines}\n` : ""}\nWhat the email should say: ${instructions}\nTone: ${tone}\n${formatPreviousDrafts(previousDrafts)}\nWrite the subject and email body now.`;
+  const user = `${formatDateContext()}\n\nWrite a new email (not a reply).\n${recipientLines ? `${recipientLines}\n` : ""}\nWhat the email should say: ${instructions}\nTone: ${describeTone(tone)}\n${formatPreviousDrafts(previousDrafts)}\nWrite the subject and email body now.`;
 
   return parseSubjectAndBody(await callLLM(settings, system, user));
 }

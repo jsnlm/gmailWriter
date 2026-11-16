@@ -1,4 +1,5 @@
 import * as llm from "../services/llm";
+import { DEFAULT_TONE, type Tone } from "../services/tone";
 import type { ThreadData, ComposeContext, SyncSettings, LocalSettings } from "../types";
 
 type AllSettings = SyncSettings & LocalSettings;
@@ -22,7 +23,7 @@ chrome.runtime.onMessage.addListener(
       composeContext?: ComposeContext;
       settings?: AllSettings;
       category?: string;
-      tone?: string;
+      tone?: Tone;
       customInstructions?: string;
       previousDrafts?: string[];
     },
@@ -50,7 +51,7 @@ chrome.runtime.onMessage.addListener(
       llm.generateDraft(
         thread,
         category ?? "",
-        tone ?? "Casual",
+        tone ?? DEFAULT_TONE,
         customInstructions ?? "",
         settings,
         previousDrafts ?? []
@@ -69,7 +70,7 @@ chrome.runtime.onMessage.addListener(
       llm.generateNewEmail(
         composeContext,
         customInstructions ?? "",
-        tone ?? "Casual",
+        tone ?? DEFAULT_TONE,
         settings,
         previousDrafts ?? []
       )

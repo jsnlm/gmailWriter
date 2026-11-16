@@ -8,7 +8,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import type { ThreadData, Draft, ComposeContext, SyncSettings, LocalSettings } from "../../types";
 import { CategorySelector } from "./CategorySelector";
-import { ToneSelector } from "./ToneSelector";
+import { TonePicker } from "./TonePicker";
+import type { Tone } from "../../services/tone";
 import { DraftViewer } from "./DraftViewer";
 
 type View = "loading-categories" | "select-category" | "error";
@@ -18,10 +19,11 @@ export type SidebarMode =
   | { kind: "reply"; thread: ThreadData; canReplyAll: boolean }
   | { kind: "compose"; currentUser: { name: string; email: string } };
 
-/** What the user typed, kept outside the sidebar so it survives closing, navigating and switching modes. */
+/** What the user typed and chose, kept outside the sidebar so it survives closing, navigating and switching modes. */
 export interface SavedPrompt {
   instructions: string;
   recipientNote: string;
+  tone: Tone;
 }
 
 // The sidebar is plain UI: it never touches Gmail's page. Whoever renders it
@@ -46,7 +48,7 @@ export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails, 
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [customInstructions, setCustomInstructions] = useState(savedPrompt.instructions);
-  const [tone, setTone] = useState("Casual");
+  const [tone, setTone] = useState<Tone>(savedPrompt.tone);
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,11 +57,15 @@ export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails, 
   // survives the sidebar closing or switching modes.
   const changeInstructions = (instructions: string) => {
     setCustomInstructions(instructions);
-    onPromptChange({ instructions, recipientNote });
+    onPromptChange({ instructions, recipientNote, tone });
   };
   const changeRecipientNote = (note: string) => {
     setRecipientNote(note);
-    onPromptChange({ instructions: customInstructions, recipientNote: note });
+    onPromptChange({ instructions: customInstructions, recipientNote: note, tone });
+  };
+  const changeTone = (newTone: Tone) => {
+    setTone(newTone);
+    onPromptChange({ instructions: customInstructions, recipientNote, tone: newTone });
   };
 
   useEffect(() => {
@@ -227,7 +233,7 @@ export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails, 
               heading={mode.kind === "compose" ? "What do you want to write?" : undefined}
             />
             <Divider />
-            <ToneSelector tone={tone} onChange={setTone} />
+            <TonePicker tone={tone} onChange={changeTone} />
             <Button
               variant="contained"
               fullWidth
