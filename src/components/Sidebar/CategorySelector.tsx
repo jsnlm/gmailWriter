@@ -18,7 +18,8 @@ export function CategorySelector({
   categories, selected, customInstructions, onSelect, onCustomInstructions, showSuggestions,
   heading = "How do you want to respond?",
 }: Props) {
-  const [showCustom, setShowCustom] = useState(!showSuggestions);
+  // Show the instructions box straight away if there's a remembered prompt in it
+  const [showCustom, setShowCustom] = useState(!showSuggestions || customInstructions.trim() !== "");
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>

@@ -5,15 +5,24 @@ import {
 } from "@mui/material";
 import ReplayIcon from "@mui/icons-material/Replay";
 import SendIcon from "@mui/icons-material/Send";
+import ReplyIcon from "@mui/icons-material/Reply";
+import ReplyAllIcon from "@mui/icons-material/ReplyAll";
 import type { Draft } from "../../types";
+
+/**
+ * Where a draft can go: a new email, a reply, or a reply when Gmail also
+ * offers Reply all (the thread has several recipients).
+ */
+export type InsertTarget = "new-email" | "reply" | "reply-or-all";
 
 interface DraftCardProps {
   draft: Draft;
   index: number;
-  onInsert: (draft: Draft) => void;
+  insertTarget: InsertTarget;
+  onInsert: (draft: Draft, replyAll: boolean) => void;
 }
 
-function DraftCard({ draft, index, onInsert }: DraftCardProps) {
+function DraftCard({ draft, index, insertTarget, onInsert }: DraftCardProps) {
   const [subject, setSubject] = useState(draft.subject);
   const [text, setText] = useState(draft.body);
 
@@ -47,14 +56,23 @@ function DraftCard({ draft, index, onInsert }: DraftCardProps) {
             "& textarea": { resize: "vertical" },
           }}
         />
-        <Button
-          variant="contained"
-          fullWidth
-          startIcon={<SendIcon />}
-          onClick={() => onInsert({ subject, body: text })}
-        >
-          Insert into Gmail
-        </Button>
+        {insertTarget === "new-email" ? (
+          <Button variant="contained" fullWidth startIcon={<SendIcon />} onClick={() => onInsert({ subject, body: text }, false)}>
+            Insert into Gmail
+          </Button>
+        ) : (
+          // Mirrors Gmail's own Reply / Reply all row under a thread
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button variant="contained" fullWidth startIcon={<ReplyIcon />} onClick={() => onInsert({ subject, body: text }, false)}>
+              Reply
+            </Button>
+            {insertTarget === "reply-or-all" && (
+              <Button variant="outlined" fullWidth startIcon={<ReplyAllIcon />} onClick={() => onInsert({ subject, body: text }, true)}>
+                Reply all
+              </Button>
+            )}
+          </Box>
+        )}
       </CardContent>
     </Card>
   );
@@ -63,16 +81,22 @@ function DraftCard({ draft, index, onInsert }: DraftCardProps) {
 interface Props {
   drafts: Draft[];
   isGenerating: boolean;
+  insertTarget: InsertTarget;
   onGenerateAnother: () => void;
-  onInsert: (draft: Draft) => void;
+  onInsert: (draft: Draft, replyAll: boolean) => void;
 }
 
-export function DraftViewer({ drafts, isGenerating, onGenerateAnother, onInsert }: Props) {
+export function DraftViewer({ drafts, isGenerating, insertTarget, onGenerateAnother, onInsert }: Props) {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {drafts.map((draft, i) => (
-        <DraftCard key={i} draft={draft} index={i} onInsert={onInsert} />
+        <DraftCard key={i} draft={draft} index={i} insertTarget={insertTarget} onInsert={onInsert} />
       ))}
+      {insertTarget !== "new-email" && (
+        <Typography variant="caption" color="text.secondary">
+          If a reply box is already open, the draft goes into it as it is.
+        </Typography>
+      )}
 
       <Divider />
 

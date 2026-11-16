@@ -8,7 +8,7 @@ import { SELECTORS, queryFirst, isVisible } from "./selectors";
 // Each insert targets the right kind, so a draft never lands in the wrong one
 // when both are open.
 
-const REPLY_OPEN_DELAY_MS = 300;
+const OPEN_REPLY_TIMEOUT_MS = 3000;
 const OPEN_WINDOW_TIMEOUT_MS = 3000;
 const POLL_MS = 100;
 
@@ -16,28 +16,41 @@ type Person = { name: string; email: string };
 
 // ── Replies ───────────────────────────────────────────────────────────────────
 
+/** True when Gmail offers "Reply all" on the open thread (it has several recipients). */
+export function canReplyAll(): boolean {
+  return queryFirst(document, SELECTORS.replyAllButton) !== null;
+}
+
 /**
- * Inserts text into the reply box of the open thread.
- * Opens the reply area if it isn't already open.
+ * Inserts text into the reply box of the open thread. If no reply box is open,
+ * opens one with Gmail's Reply or Reply all link first. A box that's already
+ * open is used as it is.
  */
-export function insertReply(text: string): boolean {
+export async function insertReply(text: string, { replyAll = false } = {}): Promise<boolean> {
   const thread = document.querySelector<HTMLElement>(SELECTORS.main) ?? document;
-  const composeBody = queryFirst(thread, SELECTORS.composeBody);
-  if (composeBody) {
-    writeToCompose(composeBody, text);
+  const openBody = queryFirst(thread, SELECTORS.composeBody);
+  if (openBody) {
+    writeToCompose(openBody, text);
     return true;
   }
 
-  const replyBtn = queryFirst(document, SELECTORS.replyButton);
-  if (!replyBtn) return false;
+  const replyAllBtn = replyAll ? queryFirst(document, SELECTORS.replyAllButton) : null;
+  if (replyAll && !replyAllBtn) console.warn("[Gmail Drafter] No Reply all link found; using Reply.");
+  const btn = replyAllBtn ?? queryFirst(document, SELECTORS.replyButton);
+  if (!btn) return false;
+  btn.click();
 
-  replyBtn.click();
-  // Give Gmail a moment to render the reply box
-  setTimeout(() => {
+  // Wait for Gmail to render the reply box
+  const deadline = Date.now() + OPEN_REPLY_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
     const body = queryFirst(thread, SELECTORS.composeBody);
-    if (body) writeToCompose(body, text);
-  }, REPLY_OPEN_DELAY_MS);
-  return true;
+    if (body) {
+      writeToCompose(body, text);
+      return true;
+    }
+  }
+  return false;
 }
 
 // ── New emails ────────────────────────────────────────────────────────────────

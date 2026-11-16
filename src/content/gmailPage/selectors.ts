@@ -19,7 +19,10 @@ export const SELECTORS = {
   personWithEmail: "[email]",
 
   // ── Open thread ───────────────────────────────────────────────────────────
-  /** The thread's subject heading. */
+  /**
+   * The thread's subject heading. Carries `data-legacy-thread-id`, which tells
+   * one thread from another. Gone from the page when no thread is open.
+   */
   threadSubject: ".hP",
   /** One per message in the thread, collapsed or expanded. */
   threadItem: "[role='main'] [role='listitem']",
@@ -40,6 +43,11 @@ export const SELECTORS = {
 
   // ── Replying ──────────────────────────────────────────────────────────────
   replyButton: ["[data-tooltip='Reply']", ".ams[role='link']"],
+  /**
+   * The "Reply all" link under the last message. Only present when the thread
+   * has several recipients. `jslog` 21577 is Gmail's ID for "reply all".
+   */
+  replyAllButton: [".ams[jslog^='21577;']", "[jslog^='21577;']", ".ams.bkI"],
   /** The element holding a Reply button; our "Draft with AI" goes after it. */
   replyButtonRow: ":has( > [data-tooltip='Reply']), :has( > [aria-label='Reply'])",
 

@@ -15,8 +15,14 @@ type View = "loading-categories" | "select-category" | "error";
 
 /** Replying to the open thread, or writing a new email from scratch. */
 export type SidebarMode =
-  | { kind: "reply"; thread: ThreadData }
+  | { kind: "reply"; thread: ThreadData; canReplyAll: boolean }
   | { kind: "compose"; currentUser: { name: string; email: string } };
+
+/** What the user typed, kept outside the sidebar so it survives closing, navigating and switching modes. */
+export interface SavedPrompt {
+  instructions: string;
+  recipientNote: string;
+}
 
 // The sidebar is plain UI: it never touches Gmail's page. Whoever renders it
 // passes in how to insert a draft and what an open compose window holds.
@@ -25,22 +31,36 @@ interface Props {
   settings: SyncSettings & LocalSettings;
   onClose: () => void;
   /** Puts the draft into Gmail. Resolves false if there was nowhere to put it. */
-  onInsert: (draft: Draft) => Promise<boolean>;
+  onInsert: (draft: Draft, options: { replyAll: boolean }) => Promise<boolean>;
   /** Recipients and subject the user already entered in Gmail, for new emails. */
   getComposeDetails: () => { recipients: { name: string; email: string }[]; subject: string };
+  /** The prompt to start with, and where to report changes to it. */
+  savedPrompt: SavedPrompt;
+  onPromptChange: (prompt: SavedPrompt) => void;
 }
 
-export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails }: Props) {
+export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails, savedPrompt, onPromptChange }: Props) {
   const thread = mode.kind === "reply" ? mode.thread : null;
   const [view, setView] = useState<View>("loading-categories");
-  const [recipientNote, setRecipientNote] = useState("");
+  const [recipientNote, setRecipientNote] = useState(savedPrompt.recipientNote);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [customInstructions, setCustomInstructions] = useState("");
+  const [customInstructions, setCustomInstructions] = useState(savedPrompt.instructions);
   const [tone, setTone] = useState("Casual");
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Typing updates the sidebar and reports the prompt in the same step, so it
+  // survives the sidebar closing or switching modes.
+  const changeInstructions = (instructions: string) => {
+    setCustomInstructions(instructions);
+    onPromptChange({ instructions, recipientNote });
+  };
+  const changeRecipientNote = (note: string) => {
+    setRecipientNote(note);
+    onPromptChange({ instructions: customInstructions, recipientNote: note });
+  };
 
   useEffect(() => {
     // Suggested responses need a thread to respond to
@@ -103,8 +123,8 @@ export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails }
     requestDraft([]);
   };
 
-  const handleInsert = async (draft: Draft) => {
-    if (await onInsert(draft)) return;
+  const handleInsert = async (draft: Draft, replyAll: boolean) => {
+    if (await onInsert(draft, { replyAll })) return;
     alert(mode.kind === "reply"
       ? "Could not find Gmail's compose area. Please click Reply in the email thread first."
       : "Could not open a new Gmail message. Please click Gmail's Compose button, then try Insert again.");
@@ -194,7 +214,7 @@ export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails }
                 fullWidth
                 size="small"
                 value={recipientNote}
-                onChange={(e) => setRecipientNote(e.target.value)}
+                onChange={(e) => changeRecipientNote(e.target.value)}
               />
             )}
             <CategorySelector
@@ -202,7 +222,7 @@ export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails }
               selected={selectedCategory}
               customInstructions={customInstructions}
               onSelect={setSelectedCategory}
-              onCustomInstructions={setCustomInstructions}
+              onCustomInstructions={changeInstructions}
               showSuggestions={mode.kind === "reply" && settings.showSuggestedResponses}
               heading={mode.kind === "compose" ? "What do you want to write?" : undefined}
             />
@@ -226,6 +246,7 @@ export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails }
                   isGenerating={isGeneratingDraft}
                   onGenerateAnother={() => requestDraft(drafts.map((d) => d.body))}
                   onInsert={handleInsert}
+                  insertTarget={mode.kind === "compose" ? "new-email" : mode.canReplyAll ? "reply-or-all" : "reply"}
                 />
               </>
             )}

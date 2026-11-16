@@ -1,5 +1,5 @@
 import React from "react";
-import { Sidebar, type SidebarMode } from "../components/Sidebar/Sidebar";
+import { Sidebar, type SidebarMode, type SavedPrompt } from "../components/Sidebar/Sidebar";
 import { gmailPage } from "./gmailPage/gmailPage";
 import { SidebarHost } from "./SidebarHost";
 import * as storage from "../services/storage";
@@ -15,51 +15,81 @@ const host = new SidebarHost({
 });
 
 let currentModeKind: SidebarMode["kind"] | null = null;
-let currentThreadUrl = "";
 
-async function openSidebar(kind: SidebarMode["kind"]) {
+// The thread a reply sidebar belongs to: its ID in the URL (to tell which way
+// the user navigated) and on screen (to tell when the next thread has loaded).
+let threadIdInUrl: string | null = null;
+let threadIdOnScreen: string | null = null;
+
+// Bumped on every open and close, so a slow open that's been overtaken by a
+// newer one (or by closing) gives up instead of showing stale content.
+let openGeneration = 0;
+
+// What the user typed, kept across closing, navigating and switching between
+// reply and compose. Lives for the life of the tab.
+let savedPrompt: SavedPrompt = { instructions: "", recipientNote: "" };
+
+/**
+ * Opens the sidebar in `kind` mode. With `afterThreadChange`, first waits for
+ * the next thread to replace the current one on screen (Gmail changes the URL
+ * before it draws the thread).
+ */
+async function openSidebar(kind: SidebarMode["kind"], { afterThreadChange = false } = {}) {
+  const generation = ++openGeneration;
+  const isStale = () => generation !== openGeneration;
+
   let mode: SidebarMode;
   if (kind === "reply") {
+    if (afterThreadChange && !(await gmailPage.waitForNewThread(threadIdOnScreen))) {
+      if (!isStale()) closeSidebar();
+      return;
+    }
     const thread = await gmailPage.readThread();
+    if (isStale()) return;
     if (!thread) {
       console.warn("[Gmail Drafter] Could not extract thread data. Are you viewing a thread?");
       return;
     }
-    mode = { kind: "reply", thread };
+    mode = { kind: "reply", thread, canReplyAll: gmailPage.canReplyAll() };
+    threadIdInUrl = gmailPage.threadIdInUrl();
+    threadIdOnScreen = gmailPage.threadIdOnScreen();
   } else {
     mode = { kind: "compose", currentUser: gmailPage.currentUser() };
   }
 
   const settings = await storage.getAllSettings();
+  if (isStale()) return;
   const width = settings.sidebarWidth ?? storage.SIDEBAR_DEFAULT_WIDTH;
 
-  const insert = (draft: Draft) =>
+  const insert = (draft: Draft, { replyAll }: { replyAll: boolean }) =>
     mode.kind === "reply"
-      ? Promise.resolve(gmailPage.insertReply(draft.body))
+      ? gmailPage.insertReply(draft.body, { replyAll })
       : gmailPage.insertNewEmail(draft);
 
   host.show(
     <Sidebar
-      // A new key resets the sidebar: per thread for replies, once for compose
-      key={mode.kind === "reply" ? window.location.href : "compose"}
+      // A new key resets the sidebar (drafts and all): per thread for replies,
+      // once for compose. The prompt survives through savedPrompt.
+      key={mode.kind === "reply" ? `reply:${threadIdOnScreen}` : "compose"}
       mode={mode}
       settings={settings}
       onClose={closeSidebar}
       onInsert={insert}
       getComposeDetails={() => gmailPage.readNewEmailWindow() ?? { recipients: [], subject: "" }}
+      savedPrompt={savedPrompt}
+      onPromptChange={(prompt) => { savedPrompt = prompt; }}
     />,
     width
   );
   gmailPage.reserveRightEdge(width);
   currentModeKind = kind;
-  currentThreadUrl = window.location.href;
 }
 
 function closeSidebar() {
+  openGeneration++; // cancel any open still in progress
   host.hide();
   gmailPage.reserveRightEdge(0);
   currentModeKind = null;
-  currentThreadUrl = "";
 }
 
 /**
@@ -71,10 +101,14 @@ function toggleSidebar(kind?: SidebarMode["kind"]) {
   openSidebar(kind ?? (gmailPage.isViewingThread() ? "reply" : "compose"));
 }
 
-// Follow the user to the next thread; a new email isn't tied to a page
+// What a reply sidebar does when Gmail's URL changes. A compose sidebar isn't
+// tied to a page, so navigation never touches it.
 gmailPage.onNavigate(() => {
-  if (window.location.href === currentThreadUrl) return;
-  if (host.isOpen && currentModeKind === "reply" && gmailPage.isViewingThread()) openSidebar("reply");
+  if (!host.isOpen || currentModeKind !== "reply") return;
+  const urlId = gmailPage.threadIdInUrl();
+  if (urlId === threadIdInUrl) return;                // same thread, e.g. ?compose=new: keep it
+  if (!urlId) { closeSidebar(); return; }             // left the thread (inbox, label, search): close
+  openSidebar("reply", { afterThreadChange: true });  // another thread: reload for it once it's loaded
 });
 
 // Alt+R, forwarded by the background service worker

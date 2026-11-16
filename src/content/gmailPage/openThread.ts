@@ -26,6 +26,45 @@ export function currentUser(): Person {
   return { name: "Me", email: "" };
 }
 
+// ── Which thread is open ──────────────────────────────────────────────────────
+// The URL changes first, then Gmail draws the thread. The URL says which thread
+// the user went to; the subject heading says which thread is on screen.
+
+const THREAD_LOAD_TIMEOUT_MS = 5000;
+const POLL_MS = 50;
+
+/**
+ * The thread ID in the URL, e.g. "FMfcg…" in `#inbox/FMfcg…` or
+ * `#label/Work/FMfcg…`, or null when the URL isn't a thread (inbox, search…).
+ * Ignores `?compose=new` and similar, which Gmail adds without leaving the thread.
+ */
+export function idInUrl(): string | null {
+  const path = location.hash.replace(/^#/, "").split("?")[0];
+  const last = path.split("/").pop() ?? "";
+  return /^[A-Za-z0-9_-]{16,}$/.test(last) ? last : null;
+}
+
+/** An ID for the thread on screen (from its subject heading), or null if none. */
+export function idOnScreen(): string | null {
+  const subject = document.querySelector<HTMLElement>(`${SELECTORS.main} ${SELECTORS.threadSubject}`);
+  if (!subject || !isVisible(subject)) return null;
+  return subject.getAttribute("data-legacy-thread-id") ?? subject.textContent?.trim() ?? null;
+}
+
+/**
+ * Waits until a thread other than `previousId` is on screen. Resolves false
+ * if none appears in time.
+ */
+export async function waitForNewThread(previousId: string | null): Promise<boolean> {
+  const deadline = Date.now() + THREAD_LOAD_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const id = idOnScreen();
+    if (id && id !== previousId && document.querySelector(SELECTORS.threadItem)) return true;
+    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+  }
+  return false;
+}
+
 /** True when a thread is open (its subject heading is on screen). */
 export function isOpen(): boolean {
   const subject = document.querySelector<HTMLElement>(`${SELECTORS.main} ${SELECTORS.threadSubject}`);

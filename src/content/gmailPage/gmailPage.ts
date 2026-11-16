@@ -39,14 +39,22 @@ export interface GmailPage {
   readThread(): Promise<ThreadData | null>;
   /** True when a thread is open. */
   isViewingThread(): boolean;
+  /** The thread ID in the URL, or null when the URL isn't a thread (inbox, search…). */
+  threadIdInUrl(): string | null;
+  /** An ID for the thread on screen, or null if none. */
+  threadIdOnScreen(): string | null;
+  /** Waits until a thread other than `previousId` is on screen; false if none appears in time. */
+  waitForNewThread(previousId: string | null): Promise<boolean>;
   /** The signed-in user. */
   currentUser(): Person;
+  /** True when Gmail offers "Reply all" on the open thread. */
+  canReplyAll(): boolean;
   /** Recipients and subject of an open new-message window, if there is one. */
   readNewEmailWindow(): { recipients: Person[]; subject: string } | null;
 
   // ── Writing ───────────────────────────────────────────────────────────────
-  /** Puts text in the open thread's reply box, opening it if needed. */
-  insertReply(body: string): boolean;
+  /** Puts text in the open thread's reply box, opening a Reply or Reply all box if none is open. */
+  insertReply(body: string, options?: { replyAll?: boolean }): Promise<boolean>;
   /** Puts a draft in a new-message window, opening one if needed. */
   insertNewEmail(draft: Draft): Promise<boolean>;
 
@@ -62,7 +70,11 @@ export interface GmailPage {
 export const gmailPage: GmailPage = {
   readThread: openThread.read,
   isViewingThread: openThread.isOpen,
+  threadIdInUrl: openThread.idInUrl,
+  threadIdOnScreen: openThread.idOnScreen,
+  waitForNewThread: openThread.waitForNewThread,
   currentUser: openThread.currentUser,
+  canReplyAll: composeWindows.canReplyAll,
   readNewEmailWindow: composeWindows.readNewEmailWindow,
   insertReply: composeWindows.insertReply,
   insertNewEmail: composeWindows.insertNewEmail,
