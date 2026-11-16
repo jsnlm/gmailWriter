@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  Box, AppBar, Toolbar, Typography, Button,
-  Tabs, Tab, Container, CircularProgress,
+  AppBar, Toolbar, Button, Divider, Stack,
+  Tab, CircularProgress,
   Snackbar, Alert,
 } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
@@ -10,6 +10,8 @@ import { SampleEmailsSection } from "./SampleEmails";
 import { PersonalInfoSection } from "./PersonalInfo";
 import { LLMConfigSection } from "./LLMConfig";
 import { PromptInstructionsSection } from "./PromptInstructions";
+import { FullPageCenter, PageRoot, SectionTabs, ScrollArea, PageContent } from "./SettingsPage.styles";
+import { AppLogo, ToolbarTitle } from "../shared";
 import { DisplaySettingsSection } from "./DisplaySettings";
 import * as storage from "../../services/storage";
 import { gmailTheme } from "../../theme";
@@ -86,9 +88,10 @@ export function SettingsPage() {
   if (!sync || !local) {
     return (
       <ThemeProvider theme={gmailTheme}>
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
+        <CssBaseline />
+        <FullPageCenter>
           <CircularProgress />
-        </Box>
+        </FullPageCenter>
       </ThemeProvider>
     );
   }
@@ -96,17 +99,13 @@ export function SettingsPage() {
   return (
     <ThemeProvider theme={gmailTheme}>
       <CssBaseline />
-      <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
-        <AppBar
-          position="static"
-          elevation={0}
-          sx={{ bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", flexShrink: 0 }}
-        >
+      <PageRoot>
+        <AppBar position="static" color="default" elevation={0}>
           <Toolbar>
-            <img src={chrome.runtime.getURL('public/icons/icon128.png')} alt="" style={{ width: 24, height: 24, marginRight: 12 }} />
-            <Typography variant="h6" sx={{ color: "text.primary", flexGrow: 1, fontWeight: 600 }}>
+            <AppLogo size={24} />
+            <ToolbarTitle variant="h6">
               Gmail AI Drafter - Settings
-            </Typography>
+            </ToolbarTitle>
             <Button
               variant="contained"
               onClick={handleSave}
@@ -116,10 +115,9 @@ export function SettingsPage() {
               {saving ? "Saving…" : "Save Settings"}
             </Button>
           </Toolbar>
-          <Tabs
+          <SectionTabs
             value={activeSection}
             onChange={(_, v) => sectionRefs[v as Section].current?.scrollIntoView({ behavior: 'smooth' })}
-            sx={{ px: 2 }}
             textColor="primary"
             indicatorColor="primary"
           >
@@ -128,11 +126,13 @@ export function SettingsPage() {
             <Tab label="Display" value="display" />
             <Tab label="Personal Info" value="personal" />
             <Tab label="Sample Emails" value="emails" />
-          </Tabs>
+          </SectionTabs>
+          <Divider />
         </AppBar>
 
-        <Box ref={scrollContainerRef} sx={{ flex: 1, overflowY: "auto", bgcolor: "grey.50" }}>
-          <Container maxWidth="md" className="py-8" sx={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <ScrollArea ref={scrollContainerRef}>
+          <PageContent maxWidth="md">
+            <Stack spacing={6}>
             <div id="llm" ref={sectionRefs.llm}>
               <LLMConfigSection
                 config={sync.llmConfig}
@@ -163,9 +163,10 @@ export function SettingsPage() {
                 onChange={(sampleEmails) => setLocal({ ...local, sampleEmails })}
               />
             </div>
-          </Container>
-        </Box>
-      </Box>
+            </Stack>
+          </PageContent>
+        </ScrollArea>
+      </PageRoot>
 
       <Snackbar
         open={snackbar.open}

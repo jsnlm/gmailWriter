@@ -4,6 +4,7 @@ import * as composeWindows from "./composeWindows";
 import * as sidebarSpace from "./sidebarSpace";
 import * as urlChanges from "./urlChanges";
 import { ButtonInjector, type ButtonHandlers } from "./buttonInjector";
+import "./gmailPage.scss"; // our styles on Gmail's page
 
 // The only way into Gmail's page. Code outside this folder imports `gmailPage`
 // from here and never touches Gmail's DOM or selectors itself.
@@ -13,6 +14,7 @@ import { ButtonInjector, type ButtonHandlers } from "./buttonInjector";
 //
 // Shared
 //   selectors.ts        every Gmail selector we rely on, documented
+//   gmailPage.scss      every style we add to Gmail's page (buttons, room for the sidebar)
 //
 // Reading Gmail
 //   openThread.ts       the open thread and the signed-in user
@@ -26,7 +28,7 @@ import { ButtonInjector, type ButtonHandlers } from "./buttonInjector";
 //   buttonInjector.ts   keeps our buttons on the page as Gmail redraws it
 //   aiReplyButton.ts    our "Draft with AI" button, next to Reply
 //   aiComposeButton.ts  our "Compose with AI" icon button, beside Compose
-//   aiButtonStyle.ts    the look those two buttons share
+//   aiButton.ts         creates those two buttons
 //
 // Watching Gmail
 //   urlChanges.ts       noticing when Gmail changes the URL

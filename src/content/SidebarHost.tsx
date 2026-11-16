@@ -4,6 +4,8 @@ import createCache, { type EmotionCache } from "@emotion/cache";
 import { CacheProvider } from "@emotion/react";
 import { ThemeProvider } from "@mui/material/styles";
 import { gmailTheme } from "../theme";
+// "?inline" loads the compiled CSS as text, for the shadow root, instead of adding it to Gmail's page
+import hostStyles from "./SidebarHost.scss?inline";
 
 // Our sidebar's container on the page: a fixed panel on the right edge with a
 // shadow root (so Gmail's CSS and ours don't leak into each other), a drag
@@ -14,36 +16,6 @@ const HOST_ID = "gmail-drafter-root";
 const MIN_WIDTH = 280;
 const MAX_WIDTH = 700;
 
-// Minimal host styles; MUI/emotion handles everything inside the shadow root
-const HOST_STYLES = `
-  :host {
-    all: initial;
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 380px;
-    height: 100vh;
-    z-index: 2147483647;
-    font-family: 'Google Sans', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-  }
-  * { box-sizing: border-box; }
-  #resize-handle {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 6px;
-    height: 100%;
-    cursor: ew-resize;
-    z-index: 1;
-    background: transparent;
-  }
-  #resize-handle:hover {
-    background: rgba(26, 115, 232, 0.2);
-  }
-`;
 
 export interface SidebarHostOptions {
   /** Called continuously while the user drags the resize handle. */
@@ -97,7 +69,7 @@ export class SidebarHost {
     const shadow = this.host.attachShadow({ mode: "open" });
 
     const style = document.createElement("style");
-    style.textContent = HOST_STYLES;
+    style.textContent = hostStyles;
     shadow.appendChild(style);
 
     const resizeHandle = document.createElement("div");
@@ -109,7 +81,7 @@ export class SidebarHost {
     this.emotionCache = createCache({ key: "gd", container: shadow as unknown as HTMLElement, prepend: true });
 
     const mountPoint = document.createElement("div");
-    mountPoint.style.cssText = "width:100%;height:100%;overflow:hidden;";
+    mountPoint.id = "mount-point";
     shadow.appendChild(mountPoint);
     this.root = createRoot(mountPoint);
   }

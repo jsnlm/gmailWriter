@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import {
-  Box, ButtonBase, TextField, Typography, Paper,
+  List, ListItemButton, ListItemIcon, ListItemText, Paper, Stack, TextField, Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 
@@ -14,6 +14,10 @@ interface Props {
   heading?: string;
 }
 
+/**
+ * Suggested responses as a Material list (hover and selected tints come from
+ * the theme), with "Add your own instructions" as the last row.
+ */
 export function CategorySelector({
   categories, selected, customInstructions, onSelect, onCustomInstructions, showSuggestions,
   heading = "How do you want to respond?",
@@ -22,89 +26,42 @@ export function CategorySelector({
   const [showCustom, setShowCustom] = useState(!showSuggestions || customInstructions.trim() !== "");
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-      <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
-        {heading}
-      </Typography>
+    <Stack spacing={1}>
+      <Typography variant="overline">{heading}</Typography>
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        {showSuggestions && (
-          <>
-            {categories.map((cat) => {
-              const isSelected = selected === cat && !showCustom;
-              return (
-                <Paper
-                  key={cat}
-                  component={ButtonBase}
-                  variant="outlined"
-                  onClick={() => { onSelect(cat); setShowCustom(false); }}
-                  sx={{
-                    textAlign: "left",
-                    p: "10px 14px",
-                    borderRadius: 2,
-                    fontSize: 13,
-                    lineHeight: 1.4,
-                    width: "100%",
-                    display: "block",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                    bgcolor: isSelected ? "primary.50" : "background.paper",
-                    borderColor: isSelected ? "primary.main" : "divider",
-                    color: isSelected ? "primary.main" : "text.primary",
-                    fontWeight: isSelected ? 500 : 400,
-                    "&:hover": {
-                      bgcolor: "primary.50",
-                      borderColor: "primary.main",
-                      color: "primary.main",
-                    },
-                  }}
-                >
-                  {cat}
-                </Paper>
-              );
-            })}
-            <Paper
-              component={ButtonBase}
-              variant="outlined"
-              onClick={() => { setShowCustom(true); onSelect(""); }}
-              sx={{
-                textAlign: "left",
-                p: "10px 14px",
-                borderRadius: 2,
-                fontSize: 13,
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: 0.5,
-                cursor: "pointer",
-                transition: "all 0.15s",
-                bgcolor: showCustom ? "primary.50" : "background.paper",
-                borderColor: showCustom ? "primary.main" : "divider",
-                borderStyle: "dashed",
-                color: showCustom ? "primary.main" : "text.secondary",
-                "&:hover": { bgcolor: "primary.50", borderColor: "primary.main", color: "primary.main" },
-              }}
-            >
-              <AddIcon sx={{ fontSize: 16 }} />
-              Add your own instructions
-            </Paper>
-          </>
-        )}
-      </Box>
+      {showSuggestions && (
+        <Paper variant="outlined">
+          <List disablePadding dense>
+            {categories.map((cat) => (
+              <ListItemButton
+                key={cat}
+                divider
+                selected={selected === cat && !showCustom}
+                onClick={() => { onSelect(cat); setShowCustom(false); }}
+              >
+                <ListItemText primary={cat} />
+              </ListItemButton>
+            ))}
+            <ListItemButton selected={showCustom} onClick={() => { setShowCustom(true); onSelect(""); }}>
+              <ListItemIcon><AddIcon fontSize="small" /></ListItemIcon>
+              <ListItemText primary="Add your own instructions" />
+            </ListItemButton>
+          </List>
+        </Paper>
+      )}
 
       {showCustom && (
         <TextField
           multiline
-          rows={6}
+          minRows={4}
+          maxRows={12}
           fullWidth
           placeholder="Describe what you want to say…"
           value={customInstructions}
           onChange={(e) => onCustomInstructions(e.target.value)}
           autoFocus
-          size="small"
-          slotProps={{ htmlInput: { style: { resize: "vertical" } } }}
         />
       )}
-    </Box>
+    </Stack>
   );
 }

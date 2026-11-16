@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import {
-  Box, Card, CardContent, Typography, TextField,
+  Card, CardContent, CardHeader, Stack, Typography, TextField,
   Button, Divider,
 } from "@mui/material";
 import ReplayIcon from "@mui/icons-material/Replay";
@@ -28,33 +28,23 @@ function DraftCard({ draft, index, insertTarget, onInsert }: DraftCardProps) {
 
   return (
     <Card>
-      <Box sx={{ px: 2, py: 1, bgcolor: "grey.50", borderBottom: 1, borderColor: "divider" }}>
-        <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
-          Draft {index + 1}
-        </Typography>
-      </Box>
-      <CardContent sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1.5 }}>
+      <CardHeader title={<Typography variant="overline">Draft {index + 1}</Typography>} />
+      <CardContent component={Stack} spacing={1.5}>
         {subject !== undefined && (
           <TextField
             label="Subject"
             fullWidth
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            size="small"
-            sx={{ "& .MuiOutlinedInput-root": { fontSize: 13 } }}
           />
         )}
         <TextField
           multiline
           minRows={7}
+          maxRows={20}
           fullWidth
           value={text}
           onChange={(e) => setText(e.target.value)}
-          size="small"
-          sx={{
-            "& .MuiOutlinedInput-root": { fontSize: 13 },
-            "& textarea": { resize: "vertical" },
-          }}
         />
         {insertTarget === "new-email" ? (
           <Button variant="contained" fullWidth startIcon={<SendIcon />} onClick={() => onInsert({ subject, body: text }, false)}>
@@ -62,7 +52,7 @@ function DraftCard({ draft, index, insertTarget, onInsert }: DraftCardProps) {
           </Button>
         ) : (
           // Mirrors Gmail's own Reply / Reply all row under a thread
-          <Box sx={{ display: "flex", gap: 1 }}>
+          <Stack direction="row" spacing={1}>
             <Button variant="contained" fullWidth startIcon={<ReplyIcon />} onClick={() => onInsert({ subject, body: text }, false)}>
               Reply
             </Button>
@@ -71,7 +61,7 @@ function DraftCard({ draft, index, insertTarget, onInsert }: DraftCardProps) {
                 Reply all
               </Button>
             )}
-          </Box>
+          </Stack>
         )}
       </CardContent>
     </Card>
@@ -88,7 +78,7 @@ interface Props {
 
 export function DraftViewer({ drafts, isGenerating, insertTarget, onGenerateAnother, onInsert }: Props) {
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+    <Stack spacing={2}>
       {drafts.map((draft, i) => (
         <DraftCard key={i} draft={draft} index={i} insertTarget={insertTarget} onInsert={onInsert} />
       ))}
@@ -109,6 +99,6 @@ export function DraftViewer({ drafts, isGenerating, insertTarget, onGenerateAnot
       >
         {isGenerating ? "Generating…" : "Generate another variation"}
       </Button>
-    </Box>
+    </Stack>
   );
 }

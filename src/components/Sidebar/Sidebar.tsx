@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Box, Typography, IconButton, CircularProgress,
+  AppBar, Stack, Toolbar, Typography, IconButton, CircularProgress,
   Alert, Button, Divider, Tooltip, TextField,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -11,6 +11,8 @@ import { CategorySelector } from "./CategorySelector";
 import { TonePicker } from "./TonePicker";
 import type { Tone } from "../../services/tone";
 import { DraftViewer } from "./DraftViewer";
+import { SidebarRoot, ScrollBody, CenteredState } from "./Sidebar.styles";
+import { AppLogo, ToolbarTitle } from "../shared";
 
 type View = "loading-categories" | "select-category" | "error";
 
@@ -139,76 +141,50 @@ export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails, 
   const canSubmit = !!(selectedCategory || customInstructions.trim());
 
   return (
-    <Box sx={{
-      width: "100%",
-      height: "100%",
-      bgcolor: "background.paper",
-      borderLeft: 1,
-      borderColor: "divider",
-      boxShadow: "-4px 0 20px rgba(0,0,0,0.10)",
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden",
-    }}>
-      {/* Header */}
-      <Box sx={{
-        display: "flex",
-        alignItems: "center",
-        px: 2,
-        py: 1.25,
-        borderBottom: 1,
-        borderColor: "divider",
-        bgcolor: "grey.50",
-        flexShrink: 0,
-      }}>
-        <img src={chrome.runtime.getURL('public/icons/icon128.png')} alt="" style={{ width: 20, height: 20, marginRight: 8 }} />
-        <Typography variant="subtitle1" fontWeight={600} sx={{ flexGrow: 1, color: "text.primary" }}>
-          AI Drafter
-        </Typography>
-        <Tooltip title="Settings">
-          <IconButton size="small" onClick={() => chrome.runtime.sendMessage({ type: "OPEN_OPTIONS" })}>
-            <SettingsIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Close">
-          <IconButton size="small" onClick={onClose}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      </Box>
+    <SidebarRoot square elevation={8}>
+      <AppBar position="static" color="default" elevation={0}>
+        <Toolbar variant="dense">
+          <AppLogo />
+          <ToolbarTitle variant="subtitle1" fontWeight={600}>AI Drafter</ToolbarTitle>
+          <Tooltip title="Settings">
+            <IconButton size="small" onClick={() => chrome.runtime.sendMessage({ type: "OPEN_OPTIONS" })}>
+              <SettingsIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Close">
+            <IconButton size="small" onClick={onClose}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Toolbar>
+      </AppBar>
+      <Divider />
 
-      {/* Thread subject chip */}
-      <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          noWrap
-          title={thread?.subject ?? "New email"}
-          sx={{ display: "block", fontWeight: 500 }}
-        >
+      <Toolbar variant="dense">
+        <Typography variant="caption" color="text.secondary" fontWeight={500} noWrap title={thread?.subject ?? "New email"}>
           {thread?.subject ?? "New email"}
         </Typography>
-      </Box>
+      </Toolbar>
+      <Divider />
 
-      {/* Body */}
-      <Box sx={{ flex: 1, overflowY: "auto", p: 2, display: "flex", flexDirection: "column", gap: 2 }}>
+      <ScrollBody spacing={2} useFlexGap>
 
         {view === "loading-categories" && (
-          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, gap: 2 }}>
+          <CenteredState spacing={2}>
             <CircularProgress size={32} />
             <Typography variant="body2" color="text.secondary">Analyzing email thread…</Typography>
-          </Box>
+          </CenteredState>
         )}
 
         {view === "error" && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Stack spacing={2}>
             <Alert severity="error" variant="outlined">{error}</Alert>
             {error?.includes("API key") && (
               <Button variant="contained" onClick={() => chrome.runtime.sendMessage({ type: "OPEN_OPTIONS" })}>
                 Open Settings
               </Button>
             )}
-          </Box>
+          </Stack>
         )}
 
         {view === "select-category" && (
@@ -218,7 +194,6 @@ export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails, 
                 label="Who's it for? (optional)"
                 placeholder="e.g. Sam, my landlord"
                 fullWidth
-                size="small"
                 value={recipientNote}
                 onChange={(e) => changeRecipientNote(e.target.value)}
               />
@@ -258,7 +233,7 @@ export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails, 
             )}
           </>
         )}
-      </Box>
-    </Box>
+      </ScrollBody>
+    </SidebarRoot>
   );
 }

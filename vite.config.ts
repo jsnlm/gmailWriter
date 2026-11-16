@@ -1,12 +1,11 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
-import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { crx } from "@crxjs/vite-plugin";
 import manifest from "./manifest.json";
 
 export default defineConfig({
   plugins: [
-    tailwindcss(),
     react(),
     crx({ manifest }),
   ],
@@ -17,6 +16,12 @@ export default defineConfig({
     strictPort: true,
     hmr: { port: 5173 },
     cors: { origin: [/chrome-extension:\/\//] },
+  },
+  css: {
+    preprocessorOptions: {
+      // Lets any .scss file `@use "tokens";` the shared design tokens in src/styles
+      scss: { loadPaths: [fileURLToPath(new URL("./src/styles", import.meta.url))] },
+    },
   },
   build: {
     outDir: "dist",

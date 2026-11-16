@@ -1,5 +1,6 @@
 import React from "react";
-import { Box, Typography, FormControlLabel, Switch, Paper } from "@mui/material";
+import { List, ListItem, ListItemText, Paper, Switch, Typography } from "@mui/material";
+import { SettingsSection } from "./SettingsSection";
 
 interface Props {
   showSuggestedResponses: boolean;
@@ -8,31 +9,33 @@ interface Props {
 
 export function DisplaySettingsSection({ showSuggestedResponses, onChange }: Props) {
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <Typography variant="h6" fontWeight={600}>Display</Typography>
-      <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={showSuggestedResponses}
-              onChange={(e) => onChange(e.target.checked)}
+    <SettingsSection title="Display">
+      <Paper variant="outlined">
+        <List disablePadding>
+          <ListItem
+            secondaryAction={
+              <Switch
+                edge="end"
+                checked={showSuggestedResponses}
+                onChange={(e) => onChange(e.target.checked)}
+                slotProps={{ input: { "aria-label": "Show suggested responses" } }}
+              />
+            }
+          >
+            <ListItemText
+              primary="Show suggested responses"
+              secondary={
+                <>
+                  When enabled, the AI will analyze the email thread and suggest response categories before drafting.
+                  <Typography component="span" variant="caption" color="warning.main" display="block">
+                    Uses an additional AI request and extra tokens.
+                  </Typography>
+                </>
+              }
             />
-          }
-          label={
-            <Box>
-              <Typography variant="body2" fontWeight={500}>Show suggested responses</Typography>
-              <Typography variant="caption" color="text.secondary">
-                When enabled, the AI will analyze the email thread and suggest response categories before drafting.
-              </Typography>
-              <Typography variant="caption" color="warning.main" sx={{ display: "block", mt: 0.5 }}>
-                Uses an additional AI request and extra tokens.
-              </Typography>
-            </Box>
-          }
-          labelPlacement="start"
-          sx={{ width: "100%", justifyContent: "space-between", ml: 0 }}
-        />
+          </ListItem>
+        </List>
       </Paper>
-    </Box>
+    </SettingsSection>
   );
 }

@@ -13,14 +13,13 @@
   "license": "ISC",
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.4.0",
-    "@tailwindcss/vite": "^4.2.2",
     "@types/chrome": "^0.1.39",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "tailwindcss": "^4.2.2",
+    "sass-embedded": "^1.108.2",
     "typescript": "^6.0.2",
     "vite": "^8.0.3"
   },

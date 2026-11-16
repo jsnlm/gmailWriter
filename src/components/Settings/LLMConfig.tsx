@@ -2,12 +2,13 @@ import React, { useState } from "react";
 import {
   FormControl, InputLabel, Select, MenuItem,
   TextField, InputAdornment, IconButton,
-  Typography, Alert, Box, Divider,
+  Alert,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import type { LLMConfig, LLMProvider } from "../../types";
 import * as llmProvider from "../../services/llmProvider";
+import { SettingsSection } from "./SettingsSection";
 
 interface Props {
   config: LLMConfig;
@@ -34,16 +35,10 @@ export function LLMConfigSection({ config, onChange }: Props) {
   };
 
   return (
-    <Box className="flex flex-col gap-6">
-      <Box>
-        <Typography variant="h6" className="font-semibold mb-1">LLM Configuration</Typography>
-        <Typography variant="body2" color="text.secondary">
-          Configure which AI provider and model powers the email drafting.
-        </Typography>
-      </Box>
-
-      <Divider />
-
+    <SettingsSection
+      title="LLM Configuration"
+      description="Configure which AI provider and model powers the email drafting."
+    >
       <FormControl fullWidth>
         <InputLabel>Provider</InputLabel>
         <Select
@@ -96,6 +91,6 @@ export function LLMConfigSection({ config, onChange }: Props) {
           Gemini uses your API key as a URL query parameter. Make sure your key has the Generative Language API enabled.
         </Alert>
       )}
-    </Box>
+    </SettingsSection>
   );
 }

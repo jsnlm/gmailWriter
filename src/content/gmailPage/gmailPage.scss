@@ -1,0 +1,106 @@
+// Styles the extension adds to Gmail's own page. Chrome injects the compiled
+// CSS into Gmail alongside the content script.
+//
+// Every class starts with "gmail-drafter-" so it can't collide with Gmail's.
+// Class names are written out in full (not built with `&-…`) so searching the
+// code for a class finds its styles. Button rules are qualified with the
+// element (button.…) so they win over Gmail's own element styles without
+// needing !important.
+
+@use "tokens" as *;
+
+/// Background and shadow for a blue button, at rest, under the pointer and
+/// pressed. Pass the shadows to use Gmail's elevations instead of ours.
+@mixin blue-button-states($shadow: $shadow, $shadow-hover: $shadow-hover) {
+  background: $blue;
+  box-shadow: $shadow;
+
+  &:hover {
+    background: $blue-hover;
+    box-shadow: $shadow-hover;
+  }
+
+  &:active {
+    background: $blue-pressed;
+  }
+}
+
+// ── Shared look of our buttons ───────────────────────────────────────────────
+
+button.gmail-drafter-ai-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  color: $on-blue;
+  font-family: $font-family;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: background 0.15s, box-shadow 0.15s;
+  @include blue-button-states;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    flex-shrink: 0;
+  }
+}
+
+// ── "Draft with AI": a pill next to each Reply button ────────────────────────
+
+button.gmail-drafter-reply-btn {
+  height: 36px;
+  padding: 0 16px;
+  margin-left: 8px;
+  border-radius: 18px;
+  vertical-align: middle;
+}
+
+// ── "Compose with AI": a square icon button beside Compose ───────────────────
+
+$compose-size: 48px; // Compose's height
+
+button.gmail-drafter-compose-btn {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: $compose-size;
+  height: $compose-size;
+  padding: 0;
+  margin-left: 8px;
+  border-radius: 16px;
+  transition: background 0.15s, box-shadow 0.08s linear;
+  @include blue-button-states($gmail-raised, $gmail-raised-hover);
+
+  img {
+    width: 24px;
+    height: 24px;
+    pointer-events: none;
+  }
+}
+
+.gmail-drafter-hidden {
+  display: none !important;
+}
+
+// ── Making room for the sidebar ──────────────────────────────────────────────
+// sidebarSpace.ts sets this variable to the sidebar's width (0px when closed).
+
+$sidebar-width: var(--gmail-drafter-sidebar-width, 0px);
+
+.gmail-drafter-pushed {
+  margin-right: $sidebar-width;
+  transition: margin-right 0.25s ease;
+}
+
+// Gmail's new-message windows sit in a dock pinned to the right edge of the
+// screen; padding it keeps them clear of the sidebar. ".dw" is Gmail's class
+// for that dock (Sass can't read selectors.ts, so it's written out here).
+.dw {
+  padding-right: $sidebar-width !important;
+  box-sizing: border-box !important;
+}

@@ -66,8 +66,8 @@ export const SELECTORS = {
   subjectInput: "input[name='subjectbox']",
   /** A new-message window. */
   composeWindow: "[role='dialog']",
-  /** Holds the new-message windows, pinned to the screen's right edge. */
-  composeDock: ".dw",
+  // The dock holding new-message windows (".dw") is styled in gmailPage.scss,
+  // which can't read this file, so its selector lives there.
 
   // ── Print view (a separate page, see printView.ts) ────────────────────────
   printMessage: ".message",

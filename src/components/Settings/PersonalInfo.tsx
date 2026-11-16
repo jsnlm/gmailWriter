@@ -1,8 +1,10 @@
 import React from "react";
-import { Box, TextField, IconButton, Button, Typography, Divider } from "@mui/material";
+import { Stack, TextField, IconButton } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import type { PersonalInfoEntry } from "../../types";
+import { SettingsSection } from "./SettingsSection";
+import { AddRowButton, InfoLabelField } from "./Settings.styles";
 
 interface Props {
   entries: PersonalInfoEntry[];
@@ -18,24 +20,17 @@ export function PersonalInfoSection({ entries, onChange }: Props) {
   const add = () => onChange([...entries, { key: "", value: "" }]);
 
   return (
-    <Box className="flex flex-col gap-6">
-      <Box>
-        <Typography variant="h6" className="font-semibold mb-1">Personal Info</Typography>
-        <Typography variant="body2" color="text.secondary">
-          These details can be included in drafted emails (e.g. phone number, Calendly link). Add or remove fields freely.
-        </Typography>
-      </Box>
-
-      <Divider />
-
-      <Box className="flex flex-col gap-3">
+    <SettingsSection
+      title="Personal Info"
+      description="These details can be included in drafted emails (e.g. phone number, Calendly link). Add or remove fields freely."
+    >
+      <Stack spacing={1.5}>
         {entries.map((entry, i) => (
-          <Box key={i} className="flex gap-2 items-center">
-            <TextField
+          <Stack key={i} direction="row" spacing={1} alignItems="center">
+            <InfoLabelField
               placeholder="Label (e.g. Phone)"
               value={entry.key}
               onChange={(e) => update(i, "key", e.target.value)}
-              sx={{ width: 160, flexShrink: 0 }}
             />
             <TextField
               placeholder="Value"
@@ -43,21 +38,16 @@ export function PersonalInfoSection({ entries, onChange }: Props) {
               onChange={(e) => update(i, "value", e.target.value)}
               fullWidth
             />
-            <IconButton onClick={() => remove(i)} color="default" size="small">
+            <IconButton onClick={() => remove(i)} size="small">
               <DeleteIcon fontSize="small" />
             </IconButton>
-          </Box>
+          </Stack>
         ))}
-      </Box>
+      </Stack>
 
-      <Button
-        variant="outlined"
-        startIcon={<AddIcon />}
-        onClick={add}
-        sx={{ alignSelf: "flex-start", borderStyle: "dashed" }}
-      >
+      <AddRowButton startIcon={<AddIcon />} onClick={add}>
         Add field
-      </Button>
-    </Box>
+      </AddRowButton>
+    </SettingsSection>
   );
 }

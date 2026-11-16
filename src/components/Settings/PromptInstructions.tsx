@@ -1,5 +1,6 @@
 import React from "react";
-import { Box, TextField, Typography, Divider } from "@mui/material";
+import { TextField } from "@mui/material";
+import { SettingsSection } from "./SettingsSection";
 
 interface Props {
   instructions: string;
@@ -8,16 +9,10 @@ interface Props {
 
 export function PromptInstructionsSection({ instructions, onChange }: Props) {
   return (
-    <Box className="flex flex-col gap-6">
-      <Box>
-        <Typography variant="h6" className="font-semibold mb-1">Writing Instructions</Typography>
-        <Typography variant="body2" color="text.secondary">
-          These instructions are added to every draft generation prompt. Use this to define rules for how responses should be written — e.g. avoiding AI-sounding patterns, preferred phrasing, things to always or never include.
-        </Typography>
-      </Box>
-
-      <Divider />
-
+    <SettingsSection
+      title="Writing Instructions"
+      description="These instructions are added to every draft generation prompt. Use this to define rules for how responses should be written — e.g. avoiding AI-sounding patterns, preferred phrasing, things to always or never include."
+    >
       <TextField
         label="Instructions"
         multiline
@@ -34,6 +29,6 @@ export function PromptInstructionsSection({ instructions, onChange }: Props) {
           '- Sound direct and confident, not overly polite',
         ].join('\n')}
       />
-    </Box>
+    </SettingsSection>
   );
 }
