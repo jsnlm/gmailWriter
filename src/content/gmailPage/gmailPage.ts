@@ -25,7 +25,7 @@ import { ButtonInjector, type ButtonHandlers } from "./buttonInjector";
 //   sidebarSpace.ts     making room on the right edge for our sidebar
 //   buttonInjector.ts   keeps our buttons on the page as Gmail redraws it
 //   aiReplyButton.ts    our "Draft with AI" button, next to Reply
-//   aiComposeButton.ts  our "AI Compose" button, under Compose
+//   aiComposeButton.ts  our "Compose with AI" icon button, beside Compose
 //   aiButtonStyle.ts    the look those two buttons share
 //
 // Watching Gmail
