@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Source for icon16/32/48/128.png: a yellow envelope with an AI sparkle.
+       The envelope (not the sparkle) is centred in the square, so the icon
+       looks centred wherever it is placed. -->
+  <rect x="16" y="28" width="96" height="72" rx="16" fill="#FFCA28"/>
+  <path d="M26 38 L64 68 L102 38" fill="none" stroke="#E09B00" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M106 3 Q110.6 19.4 127 24 Q110.6 28.6 106 45 Q101.4 28.6 85 24 Q101.4 19.4 106 3 Z" fill="#1A73E8"/>
+</svg>

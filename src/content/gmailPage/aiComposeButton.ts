@@ -19,7 +19,6 @@ export function inject(onClick: () => void): void {
     btn = createAiButton({
       className: CLASS_NAME,
       title: "Compose with AI (Alt+R)",
-      imageUrl: chrome.runtime.getURL("public/icons/icon128.png"), // same icon as the sidebar's header
       onClick,
     });
     composeBtn.insertAdjacentElement("afterend", btn);

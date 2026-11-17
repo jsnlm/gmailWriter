@@ -43,11 +43,9 @@ button.gmail-drafter-ai-btn {
   transition: background 0.15s, box-shadow 0.15s;
   @include blue-button-states;
 
-  svg {
-    width: 16px;
-    height: 16px;
-    fill: currentColor;
+  img {
     flex-shrink: 0;
+    pointer-events: none;
   }
 }
 
@@ -55,10 +53,15 @@ button.gmail-drafter-ai-btn {
 
 button.gmail-drafter-reply-btn {
   height: 36px;
-  padding: 0 16px;
+  padding: 0 16px 0 8px;
   margin-left: 8px;
   border-radius: 18px;
   vertical-align: middle;
+
+  img {
+    width: 24px;
+    height: 24px;
+  }
 }
 
 // ── "Compose with AI": a square icon button beside Compose ───────────────────
@@ -77,9 +80,8 @@ button.gmail-drafter-compose-btn {
   @include blue-button-states($gmail-raised, $gmail-raised-hover);
 
   img {
-    width: 24px;
-    height: 24px;
-    pointer-events: none;
+    width: 28px;
+    height: 28px;
   }
 }
 
