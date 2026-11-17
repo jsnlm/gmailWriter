@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import {
   FormControl, InputLabel, Select, MenuItem,
   TextField, InputAdornment, IconButton,
-  Alert,
+  Alert, Link,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
@@ -15,16 +15,30 @@ interface Props {
   onChange: (config: LLMConfig) => void;
 }
 
-const API_KEY_HINTS: Record<LLMProvider, string> = {
-  claude:   "Get your key at console.anthropic.com",
-  openai:   "Get your key at platform.openai.com",
-  gemini:   "Get your key at aistudio.google.com",
-  deepseek: "Get your key at platform.deepseek.com",
-  mistral:  "Get your key at console.mistral.ai",
-  xai:      "Get your key at console.x.ai",
-  groq:     "Get your key at console.groq.com",
-  cohere:   "Get your key at dashboard.cohere.com",
+/** Each provider's page for creating an API key. */
+const API_KEY_PAGES: Record<LLMProvider, string> = {
+  claude:   "https://console.anthropic.com/settings/keys",
+  openai:   "https://platform.openai.com/api-keys",
+  gemini:   "https://aistudio.google.com/apikey",
+  deepseek: "https://platform.deepseek.com/api_keys",
+  mistral:  "https://console.mistral.ai/api-keys",
+  xai:      "https://console.x.ai",
+  groq:     "https://console.groq.com/keys",
+  cohere:   "https://dashboard.cohere.com/api-keys",
 };
+
+/** "Get your key at console.anthropic.com", with the site as a link that opens in a new tab. */
+function ApiKeyHint({ provider }: { provider: LLMProvider }) {
+  const url = API_KEY_PAGES[provider];
+  return (
+    <>
+      Get your key at{" "}
+      <Link href={url} target="_blank" rel="noopener noreferrer">
+        {new URL(url).hostname}
+      </Link>
+    </>
+  );
+}
 
 export function LLMConfigSection({ config, onChange }: Props) {
   const [showKey, setShowKey] = useState(false);
@@ -59,7 +73,7 @@ export function LLMConfigSection({ config, onChange }: Props) {
         value={config.apiKey}
         onChange={(e) => onChange({ ...config, apiKey: e.target.value })}
         placeholder={config.provider === "claude" ? "sk-ant-..." : config.provider === "gemini" ? "AIza..." : "sk-..."}
-        helperText={API_KEY_HINTS[config.provider]}
+        helperText={<ApiKeyHint provider={config.provider} />}
         slotProps={{
           input: {
             endAdornment: (

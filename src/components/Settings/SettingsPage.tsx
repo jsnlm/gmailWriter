@@ -19,6 +19,14 @@ import type { SyncSettings, LocalSettings } from "../../types";
 
 type Section = "llm" | "writing" | "personal" | "emails" | "display";
 
+/** Stops the user from accidentally closing or reloading the page with unsaved
+ *  changes; Chrome then asks "Leave site?" (its wording, which can't be changed). */
+function warnBeforeLeaving(on: boolean) {
+  window.onbeforeunload = on ? (e) => { e.preventDefault(); } : null;
+}
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
 export function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>("llm");
   const [sync, setSync] = useState<SyncSettings | null>(null);
@@ -26,7 +34,7 @@ export function SettingsPage() {
   const [savedSync, setSavedSync] = useState<SyncSettings | null>(null);
   const [savedLocal, setSavedLocal] = useState<LocalSettings | null>(null);
   const [saving, setSaving] = useState(false);
-  const isDirty = JSON.stringify(sync) !== JSON.stringify(savedSync) || JSON.stringify(local) !== JSON.stringify(savedLocal);
+  const isDirty = !same(sync, savedSync) || !same(local, savedLocal);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: "success" | "error" }>({
     open: false, message: "", severity: "success",
   });
@@ -67,6 +75,31 @@ export function SettingsPage() {
     return () => observer.disconnect();
   }, [settingsLoaded]);
 
+  // Every edit goes through these, so the leave-page warning stays in step
+  // with whether anything is unsaved.
+  const updateSync = (next: SyncSettings) => {
+    setSync(next);
+    warnBeforeLeaving(!same(next, savedSync) || !same(local, savedLocal));
+  };
+  const updateLocal = (next: LocalSettings) => {
+    setLocal(next);
+    warnBeforeLeaving(!same(sync, savedSync) || !same(next, savedLocal));
+  };
+
+  const handleDiscard = () => {
+    setSync(savedSync);
+    setLocal(savedLocal);
+    warnBeforeLeaving(false);
+  };
+
+  // Cmd+S / Ctrl+S saves, instead of the browser's "save page as"
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      if (isDirty && !saving) handleSave();
+    }
+  };
+
   const handleSave = async () => {
     if (!sync || !local) return;
     setSaving(true);
@@ -77,6 +110,7 @@ export function SettingsPage() {
       ]);
       setSavedSync(sync);
       setSavedLocal(local);
+      warnBeforeLeaving(false);
       setSnackbar({ open: true, message: "Settings saved", severity: "success" });
     } catch {
       setSnackbar({ open: true, message: "Failed to save settings", severity: "error" });
@@ -99,21 +133,13 @@ export function SettingsPage() {
   return (
     <ThemeProvider theme={gmailTheme}>
       <CssBaseline />
-      <PageRoot>
+      <PageRoot onKeyDown={handleKeyDown}>
         <AppBar position="static" color="default" elevation={0}>
           <Toolbar>
             <AppLogo size={24} />
             <ToolbarTitle variant="h6">
               Gmail AI Drafter - Settings
             </ToolbarTitle>
-            <Button
-              variant="contained"
-              onClick={handleSave}
-              disabled={saving || !isDirty}
-              startIcon={saving ? <CircularProgress size={16} color="inherit" /> : undefined}
-            >
-              {saving ? "Saving…" : "Save Settings"}
-            </Button>
           </Toolbar>
           <SectionTabs
             value={activeSection}
@@ -136,37 +162,54 @@ export function SettingsPage() {
             <div id="llm" ref={sectionRefs.llm}>
               <LLMConfigSection
                 config={sync.llmConfig}
-                onChange={(llmConfig) => setSync({ ...sync, llmConfig })}
+                onChange={(llmConfig) => updateSync({ ...sync, llmConfig })}
               />
             </div>
             <div id="writing" ref={sectionRefs.writing}>
               <PromptInstructionsSection
                 instructions={sync.promptInstructions}
-                onChange={(promptInstructions) => setSync({ ...sync, promptInstructions })}
+                onChange={(promptInstructions) => updateSync({ ...sync, promptInstructions })}
               />
             </div>
             <div id="display" ref={sectionRefs.display}>
               <DisplaySettingsSection
                 showSuggestedResponses={sync.showSuggestedResponses}
-                onChange={(showSuggestedResponses) => setSync({ ...sync, showSuggestedResponses })}
+                onChange={(showSuggestedResponses) => updateSync({ ...sync, showSuggestedResponses })}
               />
             </div>
             <div id="personal" ref={sectionRefs.personal}>
               <PersonalInfoSection
                 entries={sync.personalInfo}
-                onChange={(personalInfo) => setSync({ ...sync, personalInfo })}
+                onChange={(personalInfo) => updateSync({ ...sync, personalInfo })}
               />
             </div>
             <div id="emails" ref={sectionRefs.emails}>
               <SampleEmailsSection
                 emails={local.sampleEmails}
-                onChange={(sampleEmails) => setLocal({ ...local, sampleEmails })}
+                onChange={(sampleEmails) => updateLocal({ ...local, sampleEmails })}
               />
             </div>
             </Stack>
           </PageContent>
         </ScrollArea>
       </PageRoot>
+
+      {/* Stays up for as long as anything is unsaved */}
+      <Snackbar
+        open={isDirty}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        message="You have unsaved changes"
+        action={
+          <>
+            <Button color="inherit" size="small" onClick={handleDiscard} disabled={saving}>
+              Discard
+            </Button>
+            <Button variant="contained" size="small" onClick={handleSave} loading={saving}>
+              Save
+            </Button>
+          </>
+        }
+      />
 
       <Snackbar
         open={snackbar.open}

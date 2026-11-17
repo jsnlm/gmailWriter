@@ -146,11 +146,14 @@ export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails, 
         <Toolbar variant="dense">
           <AppLogo />
           <ToolbarTitle variant="subtitle1" fontWeight={600}>AI Drafter</ToolbarTitle>
-          <Tooltip title="Settings">
-            <IconButton size="small" onClick={() => chrome.runtime.sendMessage({ type: "OPEN_OPTIONS" })}>
-              <SettingsIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          <Button
+            size="small"
+            color="inherit"
+            startIcon={<SettingsIcon />}
+            onClick={() => chrome.runtime.sendMessage({ type: "OPEN_OPTIONS" })}
+          >
+            Settings
+          </Button>
           <Tooltip title="Close">
             <IconButton size="small" onClick={onClose}>
               <CloseIcon fontSize="small" />
