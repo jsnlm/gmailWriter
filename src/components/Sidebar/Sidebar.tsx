@@ -5,6 +5,8 @@ import {
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import CloseIcon from "@mui/icons-material/Close";
+import FeedbackOutlinedIcon from "@mui/icons-material/FeedbackOutlined";
+import { feedbackUrl } from "../../services/feedback";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import type { ThreadData, Draft, ComposeContext, SyncSettings, LocalSettings } from "../../types";
 import { CategorySelector } from "./CategorySelector";
@@ -42,6 +44,10 @@ interface Props {
   savedPrompt: SavedPrompt;
   onPromptChange: (prompt: SavedPrompt) => void;
 }
+
+// MUI draws tooltips at the end of Gmail's page by default, outside the
+// sidebar's shadow root where our styles don't reach. This keeps them inside.
+const IN_SIDEBAR = { popper: { disablePortal: true } };
 
 export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails, savedPrompt, onPromptChange }: Props) {
   const thread = mode.kind === "reply" ? mode.thread : null;
@@ -146,15 +152,22 @@ export function Sidebar({ mode, settings, onClose, onInsert, getComposeDetails, 
         <Toolbar variant="dense">
           <AppLogo />
           <ToolbarTitle variant="subtitle1" fontWeight={600}>AI Drafter</ToolbarTitle>
-          <Button
-            size="small"
-            color="inherit"
-            startIcon={<SettingsIcon />}
-            onClick={() => chrome.runtime.sendMessage({ type: "OPEN_OPTIONS" })}
-          >
-            Settings
-          </Button>
-          <Tooltip title="Close">
+          <Tooltip title="Open settings" slotProps={IN_SIDEBAR}>
+            <Button
+              size="small"
+              color="inherit"
+              startIcon={<SettingsIcon />}
+              onClick={() => chrome.runtime.sendMessage({ type: "OPEN_OPTIONS" })}
+            >
+              Settings
+            </Button>
+          </Tooltip>
+          <Tooltip title="Send feedback" slotProps={IN_SIDEBAR}>
+            <IconButton size="small" href={feedbackUrl()} target="_blank" rel="noopener noreferrer">
+              <FeedbackOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Close" slotProps={IN_SIDEBAR}>
             <IconButton size="small" onClick={onClose}>
               <CloseIcon fontSize="small" />
             </IconButton>

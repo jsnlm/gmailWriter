@@ -11,7 +11,7 @@ import { PersonalInfoSection } from "./PersonalInfo";
 import { LLMConfigSection } from "./LLMConfig";
 import { PromptInstructionsSection } from "./PromptInstructions";
 import { FullPageCenter, PageRoot, SectionTabs, ScrollArea, PageContent } from "./SettingsPage.styles";
-import { AppLogo, ToolbarTitle } from "../shared";
+import { AppLogo, ToolbarTitle, SendFeedbackButton } from "../shared";
 import { DisplaySettingsSection } from "./DisplaySettings";
 import * as storage from "../../services/storage";
 import { gmailTheme } from "../../theme";
@@ -140,6 +140,7 @@ export function SettingsPage() {
             <ToolbarTitle variant="h6">
               Gmail AI Drafter - Settings
             </ToolbarTitle>
+            <SendFeedbackButton />
           </Toolbar>
           <SectionTabs
             value={activeSection}

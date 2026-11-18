@@ -1,8 +1,13 @@
 import * as llm from "../services/llm";
 import { DEFAULT_TONE, type Tone } from "../services/tone";
+import { uninstallFeedbackUrl } from "../services/feedback";
 import type { ThreadData, ComposeContext, SyncSettings, LocalSettings } from "../types";
 
 type AllSettings = SyncSettings & LocalSettings;
+
+// When the user uninstalls, Chrome opens a pre-filled feedback issue. Set on
+// every start so the versions in it stay current after updates.
+chrome.runtime.setUninstallURL(uninstallFeedbackUrl());
 
 // Forward keyboard shortcut to the active Gmail tab
 chrome.commands.onCommand.addListener(async (command) => {

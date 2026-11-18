@@ -1,6 +1,8 @@
 import React from "react";
 import { styled } from "@mui/material/styles";
-import { Typography } from "@mui/material";
+import { Button, Typography } from "@mui/material";
+import FeedbackOutlinedIcon from "@mui/icons-material/FeedbackOutlined";
+import { feedbackUrl } from "../services/feedback";
 
 // Small pieces shared by the sidebar and the settings page.
 
@@ -13,3 +15,19 @@ export function AppLogo({ size = 20 }: { size?: number }) {
 
 /** A toolbar's title, filling the space so actions after it sit at the far end. */
 export const ToolbarTitle = styled(Typography)({ flexGrow: 1 });
+
+/** "Send feedback": opens a pre-filled GitHub issue in a new tab. */
+export function SendFeedbackButton() {
+  return (
+    <Button
+      size="small"
+      color="inherit"
+      startIcon={<FeedbackOutlinedIcon />}
+      href={feedbackUrl()}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Send feedback
+    </Button>
+  );
+}
